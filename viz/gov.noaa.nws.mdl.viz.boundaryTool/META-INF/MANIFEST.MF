@@ -4,7 +4,7 @@ Bundle-Name: Boundarytools Plug-in
 Bundle-SymbolicName: gov.noaa.nws.mdl.viz.boundaryTool;singleton:=true
 Bundle-Version:  1.15.0.qualifier
 Bundle-Vendor: MDL
-Eclipse-RegisterBuddy:com.raytheon.uf.viz.core.rsc
+Eclipse-RegisterBuddy: com.raytheon.uf.viz.core.rsc
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.ui,
  com.raytheon.viz.core,
