@@ -230,7 +230,7 @@ public class BoundaryEditorLayer extends AbstractBoundaryResource {
      * (non-Javadoc)
      * 
      * @see
-     * gov.noaa.nws.mdl.autonowcastertools.common.boundary.AbstractBoundaryResource
+     * gov.noaa.nws.mdl.viz.boundaryTool.common.boundary.AbstractBoundaryResource
      * #getResourceName()
      */
     @Override
@@ -242,9 +242,9 @@ public class BoundaryEditorLayer extends AbstractBoundaryResource {
      * (non-Javadoc)
      * 
      * @see
-     * gov.noaa.nws.mdl.autonowcastertools.common.boundary.AbstractBoundaryResource
+     * gov.noaa.nws.mdl.viz.boundaryTool.common.boundary.AbstractBoundaryResource
      * #initializeState
-     * (gov.noaa.nws.mdl.autonowcastertools.common.boundary.BoundaryState)
+     * (gov.noaa.nws.mdl.viz.boundaryTool.common.boundary.BoundaryState)
      */
     @Override
     protected void initializeState(BoundaryState state) {

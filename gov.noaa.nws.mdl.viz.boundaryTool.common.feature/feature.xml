@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="gov.noaa.nws.mdl.viz.boundaryToll.common.feature"
+      id="gov.noaa.nws.mdl.viz.boundaryTool.common.feature"
       label="Feature"
       version="1.0.0.qualifier">
 
