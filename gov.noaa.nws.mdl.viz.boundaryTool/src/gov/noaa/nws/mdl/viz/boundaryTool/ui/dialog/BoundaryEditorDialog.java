@@ -339,9 +339,10 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
             }
         });
 
-        // Boundary Motion Modification: This will allow the user to adjust the
-        // boundary position
-        // its current position and recompute the motion
+        /*
+         * Boundary Motion Modification: This will allow the user to adjust the
+         * boundary position
+         */
         adjustMotionBtn = new Button(boundaryFieldComposite, SWT.PUSH);
         adjustMotionBtn.setText("Modify the Motion");
         adjustMotionBtn
@@ -618,8 +619,9 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
         cancelBtn.setEnabled(false);
         deleteBtn.setEnabled(false);
         adjustMotionBtn.setEnabled(false);
-        // Set "Save Boundary Data" button gray:
-        // when data are saved
+        /*
+         * Set "Save Boundary Data" button gray: when data are saved
+         */
         saveDataBtn.setBackground(Display.getCurrent().getSystemColor(
                 SWT.COLOR_GRAY));
         boundarylayer.issueRefresh();
@@ -708,6 +710,8 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
                         .remove(boundarylayer.getBoundaryState().boundaryId);
                 boundarylayer.getBoundaryState().timePointsMap
                         .remove(boundarylayer.getBoundaryState().boundaryId);
+                boundarylayer.getBoundaryState().moveNotAllowed = false;
+                boundarylayer.getBoundaryState().lineIsMoving = false;
 
             } else {
                 if (boundarylayer.getBoundaryState().isMovingMap
@@ -728,13 +732,8 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
                             boundarylayer.getBoundaryState().boundaryId, true);
                     // Setting speed for newly created moving boundary
                     // Need to move to another frame
-                    MessageBox messageBox = new MessageBox(getShell(),
-                            SWT.ICON_WARNING | SWT.OK);
-                    messageBox.setText("Warning !!!");
-                    messageBox
-                            .setMessage("Please DO NOT add/delete any vertex when starting to compute the motion vector"
-                                    + " ALSO PLEASE MOVE TO ANOTHER FRAME before moving the polyline!!!");
-                    messageBox.open();
+                    boundarylayer.getBoundaryState().moveNotAllowed = true;
+                    boundarylayer.getBoundaryState().lineIsMoving = true;
                 }
                 boundarylayer.getBoundaryState().existingBoundaryNotEmptyMap
                         .remove(boundarylayer.getBoundaryState().boundaryId);
@@ -777,6 +776,9 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
                         .remove(boundarylayer.getBoundaryState().boundaryId);
                 motionCbo.setItems(modeStrings);
                 motionCbo.setText(Stationary);
+                boundarylayer.getBoundaryState().lineIsMoving = false;
+                boundarylayer.getBoundaryState().moveNotAllowed = false;
+                boundarylayer.getBoundaryState().movingEdited = false;
             }
             break;
         default:
@@ -861,9 +863,15 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
             }
             if (boundarylayer.getBoundaryState().isMovingMap.get(id) == true) {
                 s = Moving;
+                boundarylayer.getBoundaryState().lineIsMoving = true;
+                boundarylayer.getBoundaryState().moveNotAllowed = true;
+                boundarylayer.getBoundaryState().movingEdited = true;
                 adjustMotionBtn.setEnabled(true);
             } else {
                 s = Stationary;
+                boundarylayer.getBoundaryState().lineIsMoving = false;
+                boundarylayer.getBoundaryState().moveNotAllowed = false;
+                boundarylayer.getBoundaryState().movingEdited = false;
                 adjustMotionBtn.setEnabled(false);
             }
             motionCbo.setText(s);

@@ -241,13 +241,15 @@ public class BoundaryDisplay implements IRenderable {
         }
 
         case SAVE: {
-            // new thread "saveData" to write the data to the disc
-            // when SaveBtn is clicked
-            // re-paint polylines after boundary data being saved
+            /*
+             * new thread "saveData" to write the data to the disc when SaveBtn
+             * is clicked re-paint polylines after boundary data being saved
+             */
             if (!currentState.boundariesMap.isEmpty()) {
                 paintPolyMode(target, paintProps);
             }
             currentState.editedLineForMotionComputation = null;
+            currentState.moveNotAllowed = true;
             break;
         }
 
@@ -255,6 +257,8 @@ public class BoundaryDisplay implements IRenderable {
             if (!currentState.boundariesMap.isEmpty()) {
                 paintPolyMode(target, paintProps);
             }
+            currentState.frameAtCreationTime = trackUtil
+                    .getCurrentFrame(paintProps.getFramesInfo());
 
             currentState.createTimeMap.remove(currentState.boundaryId);
             currentState.editedTimeMap.remove(currentState.boundaryId);
@@ -266,6 +270,8 @@ public class BoundaryDisplay implements IRenderable {
 
             currentState.userAction = UserAction.EDIT_BOUNDARY;
             currentState.editedLineForMotionComputation = null;
+            currentState.motionIndex = currentFrame;
+            currentState.lineIsMoving = false;
             break;
         }
 
@@ -274,6 +280,7 @@ public class BoundaryDisplay implements IRenderable {
                 paintPolyMode(target, paintProps);
                 currentState.dialogObject.setBtnFalseAfterCancelAction();
                 currentState.editedLineForMotionComputation = null;
+                currentState.moveNotAllowed = true;
             }
             break;
         }
@@ -282,6 +289,7 @@ public class BoundaryDisplay implements IRenderable {
             if (!currentState.boundariesMap.isEmpty()) {
                 paintPolyMode(target, paintProps);
                 currentState.dialogObject.setBtnFalseAfterCancelAction();
+                currentState.moveNotAllowed = true;
             }
             break;
         }
@@ -305,6 +313,7 @@ public class BoundaryDisplay implements IRenderable {
         case DRAG_ME: {
             paintDragMeLine(target, paintProps);
             paintDragMeText(target, paintProps, currentState.dragMeLine);
+            currentState.moveNotAllowed = false;
             break;
         }
 
@@ -700,18 +709,21 @@ public class BoundaryDisplay implements IRenderable {
         int frameCount = trackUtil.getFrameCount(paintProps.getFramesInfo());
         int currFrame = trackUtil.getCurrentFrame(paintProps.getFramesInfo());
         DataTime[] times = trackUtil.getDataTimes(paintProps.getFramesInfo());
-        // Ama: October 4, 2011
-        // when time updates, update position for all active moving boundaries
-        // at the current time
-        //
+        /*
+         * Ama: October 4, 2011 when time updates, update position for all
+         * active moving boundaries at the current time Resetting to polyline to
+         * its original form before the user tries to move it without selecting
+         * another frame other the one at creation frame
+         */
+
         int currentBoundaryId = currentState.boundaryId;
 
         boolean update = isUpdatedDataTimes(paintProps);
-        // Create a map holding the active boundaries
-        // Since boundariesMap is being modified, cannot use "iterator"
-        // using "iterator" statement while the list is modified causes
-        // "ConcurrentModificationException"
-
+        /*
+         * Create a map holding the active boundaries Since boundariesMap is
+         * being modified, cannot use "iterator" using "iterator" statement
+         * while the list is modified causes "ConcurrentModificationException"
+         */
         Map<Integer, Integer> activeBoundariesMap = new HashMap<Integer, Integer>();
 
         for (int i : currentState.boundariesMap.keySet()) {
@@ -745,9 +757,10 @@ public class BoundaryDisplay implements IRenderable {
                         || update
                         || currentState.existingBoundaryNotEmptyMap
                                 .get(currentState.boundaryId)) {
-                    // if "update = true" then we need to remove the current
-                    // boundary from timePointMap
-                    // and theAnchorLineMap
+                    /*
+                     * if "update = true" then we need to remove the current
+                     * boundary from timePointMap and theAnchorLineMap
+                     */
                     if (currentState.timePoints != null
                             && currentState.timePoints.length != frameCount) {
                         currentState.timePoints = null;
@@ -916,7 +929,6 @@ public class BoundaryDisplay implements IRenderable {
         int moveIndex = this.trackUtil.getCurrentFrame(paintProps
                 .getFramesInfo());
         int pivotIndex = state.displayedPivotIndex;
-
         BoundaryPolyLine startCoordForMotion;
         BoundaryPolyLine endCoordForMotion;
 
@@ -948,8 +960,10 @@ public class BoundaryDisplay implements IRenderable {
         }
         BoundaryPolyLine[] timePoints = new BoundaryPolyLine[state.timePoints.length];
 
-        // Motion computation for moving boundary
-        // editedLineForMotionComputation: original boundary at creation time
+        /*
+         * Motion computation for moving boundary
+         * editedLineForMotionComputation: original boundary at creation time
+         */
         if (state.editedLineForMotionComputation != null) {
             startCoordForMotion = state.timePoints[moveIndex];
             endCoordForMotion = state.timePoints[state.displayedIndexAtStartMotionCompute];
@@ -960,10 +974,11 @@ public class BoundaryDisplay implements IRenderable {
                     .getCoordinates();
             lineEndCoords = state.editedLineForMotionComputation
                     .getCoordinates();
-            GeodeticCalculator gc = new GeodeticCalculator();
-            for (int j = 0; j < lineStartCoordsForMotion.length; j++) {
+            if (lineStartCoordsForMotion.length == lineEndCoords.length
+                    && state.isEditable()) {
 
-                try {
+                GeodeticCalculator gc = new GeodeticCalculator();
+                for (int j = 0; j < lineStartCoordsForMotion.length; j++) {
 
                     if (state.displayedIndexAtStartMotionCompute > moveIndex) {
                         gc.setStartingGeographicPoint(
@@ -992,16 +1007,6 @@ public class BoundaryDisplay implements IRenderable {
                     if (Double.isNaN(speed)) {
                         return;
                     }
-
-                } catch (ArrayIndexOutOfBoundsException a) {
-                    statusHandler
-                            .handle(Priority.PROBLEM,
-                                    "Oops! You tried to add/delete a vertex while"
-                                            + " in process of computing the boundary motion"
-                                            + " PLEASE DO NOT add any new vertex during motion computation"
-                                            + " Click Clear button and restart your boundary creation again ",
-                                    a);
-                    return;
                 }
             }
         }
@@ -1058,6 +1063,7 @@ public class BoundaryDisplay implements IRenderable {
         state.timePointsMap.remove(state.boundaryId);
 
         state.timePointsMap.put(state.boundaryId, timePoints);
+        state.moveNotAllowed = false;
     }
 
     private void generateNewTrackInfo(BoundaryState state, int anchorIndex,
@@ -1124,8 +1130,7 @@ public class BoundaryDisplay implements IRenderable {
                     if (state.vertexSpeed == null || state.vertexAngle == null) {
                         state.vertexSpeed[j] = vertexSpeed[j];
 
-                        // if (state.userAction == UserAction.INSERT_BOUNDARY) {
-                        // // calculate based on poly line
+                         // calculate based on polyline
                         GeodeticCalculator gc = new GeodeticCalculator();
                         gc.setStartingGeographicPoint(coords[j].x, coords[j].y);
                         gc.setDestinationGeographicPoint(
@@ -1245,5 +1250,4 @@ public class BoundaryDisplay implements IRenderable {
                 || (!uniqueTimes[0].equals(currentDisplayedTimes[0]) && !uniqueTimes[len - 1]
                         .equals(currentDisplayedTimes[len - 1]));
     }
-
 }

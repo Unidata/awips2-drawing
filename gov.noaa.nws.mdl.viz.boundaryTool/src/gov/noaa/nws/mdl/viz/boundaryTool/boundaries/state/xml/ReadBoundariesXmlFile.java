@@ -54,7 +54,6 @@ public class ReadBoundariesXmlFile {
         float bndLifeSpan = 0;
         long oneHour = TimeUtil.MILLIS_PER_HOUR;
         String moving = "Moving";
-        // Boundaries boundariesObj = new Boundaries();
 
         // Use Localization context to read boundary data
         IPathManager pm = PathManagerFactory.getPathManager();
@@ -190,8 +189,8 @@ public class ReadBoundariesXmlFile {
                 statusHandler.handle(Priority.PROBLEM,
                         "problem in reading boundary data", e);
             } catch (LocalizationException e1) {
-                statusHandler.handle(Priority.PROBLEM, "Localization exception",
-                        e1);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Localization exception", e1);
             }
         }
     }
