@@ -106,7 +106,11 @@ public class BoundaryState {
     public LineString dragMeLine;
     public LineString editedLineForMotionComputation;
     public int displayedIndexAtStartMotionCompute;
-
+    public int frameAtCreationTime = 0;
+    public int motionIndex;
+    public boolean moveNotAllowed = false;
+    public boolean lineIsMoving = false;
+    public boolean movingEdited = false;
     public LineString prevBoundary;
 
     /** Map to store active boundaries */

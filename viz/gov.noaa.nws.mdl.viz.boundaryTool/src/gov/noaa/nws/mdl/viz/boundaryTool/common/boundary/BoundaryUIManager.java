@@ -161,6 +161,9 @@ public class BoundaryUIManager extends InputAdapter {
 
     @Override
     public boolean handleMouseDown(int x, int y, int mouseButton) {
+        if(controller.getBoundaryState().moveNotAllowed) {
+            return false;
+        }
         if (!isHandleInput()) {
             return super.handleMouseDown(x, y, mouseButton);
         }
@@ -186,6 +189,12 @@ public class BoundaryUIManager extends InputAdapter {
 
     @Override
     public boolean handleMouseDownMove(int x, int y, int mouseButton) {
+        if(controller.getBoundaryState().moveNotAllowed) {
+            return false;
+        } 
+        if (controller.getBoundaryState().movingEdited){
+            return false;
+        }
         if (!isHandleInput()) {
             return super.handleMouseDownMove(x, y, mouseButton);
         }
@@ -198,7 +207,7 @@ public class BoundaryUIManager extends InputAdapter {
             move = true;
         } else if (mouseButton == 2
                 && moveType != null
-                && controller.getBoundaryState().userAction == UserAction.INSERT_BOUNDARY) {
+                && controller.getBoundaryState().userAction == UserAction.INSERT_BOUNDARY && controller.getBoundaryState().lineIsMoving==false) {
             if (!pointCreated) {
                 state = controller.getBoundaryState();
                 pointCreated = true;
@@ -219,12 +228,16 @@ public class BoundaryUIManager extends InputAdapter {
 
     @Override
     public boolean handleMouseUp(int x, int y, int mouseButton) {
+        if(controller.getBoundaryState().moveNotAllowed) {
+            controller.getBoundaryState().moveNotAllowed = false;
+            return false;
+        }
         if (!isHandleInput()) {
             super.handleMouseUp(x, y, mouseButton);
         }
         BoundaryState state = controller.getBoundaryState();
         boolean rval = false;
-        if (((mouseButton == 1) || (mouseButton == 2 && pointCreated))
+        if (((mouseButton == 1) || (mouseButton == 2 && pointCreated && controller.getBoundaryState().lineIsMoving==false))
                 && moveType != null) {
             state.dragMeGeom = state.mouseDownGeom;
             state.mouseDownGeom = null;
@@ -243,9 +256,9 @@ public class BoundaryUIManager extends InputAdapter {
             Coordinate mouse = new Coordinate(x, y);
             int idxToDelete = getCoordinateIndex(controller, coords, mouse);
             if (idxToDelete >= 0) {
-                deleteVertex(idxToDelete);
+                if(!controller.getBoundaryState().lineIsMoving) deleteVertex(idxToDelete);
             } else if (closeToLine(controller, coords, mouse)) {
-                addVertex(lastX, lastY);
+                if(!controller.getBoundaryState().lineIsMoving) addVertex(lastX, lastY);
             } else {
                 rval = false;
             }
@@ -582,7 +595,7 @@ public class BoundaryUIManager extends InputAdapter {
         @Override
         public void run() {
             BoundaryState state = controller.getBoundaryState();
-            deleteVertex(getCoordinateIndex(controller, state.boundariesMap
+            if(!controller.getBoundaryState().lineIsMoving) deleteVertex(getCoordinateIndex(controller, state.boundariesMap
                     .get(state.boundaryId).getCoordinates(), new Coordinate(
                     lastX, lastY)));
             state.dragMeLine = (LineString) state.dragMeGeom;
@@ -613,7 +626,7 @@ public class BoundaryUIManager extends InputAdapter {
         @Override
         public void run() {
             BoundaryState state = controller.getBoundaryState();
-            addVertex(lastX, lastY);
+            if(!controller.getBoundaryState().lineIsMoving) addVertex(lastX, lastY);
             state.dragMeLine = (LineString) state.dragMeGeom;
             state.geomChanged = true;
             updateNumberOfPointsForLine();
