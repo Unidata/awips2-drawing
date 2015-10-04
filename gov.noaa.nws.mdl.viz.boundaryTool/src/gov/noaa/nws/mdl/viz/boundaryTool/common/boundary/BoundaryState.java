@@ -75,10 +75,6 @@ public class BoundaryState {
 
     public Map<Integer, Boolean> isMovingMap = new HashMap<Integer, Boolean>();
 
-    public boolean resetAnchor = false;
-
-    public boolean originalTrack = true;
-
     public boolean isEditable() {
         return editable;
     }
@@ -108,7 +104,7 @@ public class BoundaryState {
     public int displayedIndexAtStartMotionCompute;
     public int frameAtCreationTime = 0;
     public int motionIndex;
-    public boolean moveNotAllowed = false;
+    public boolean dragingLineNotAllowed = false;
     public boolean lineIsMoving = false;
     public boolean movingEdited = false;
     public LineString prevBoundary;
