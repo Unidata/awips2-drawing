@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -104,7 +105,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
     private final String boundaryMode[] = { "Stationary", "Moving" };
 
     // Atmospheric regimes
-    private final String regime[] = { "COLD FRONT", "STATIONARY/ WARM FRONT",
+    private final String regime[] = { "COLD FRONT", "STATIONARY/WARM FRONT",
             "SEA/LAKE BREEZE", "DRY LINE", "GUST FRONT" };
 
     private void setupEditMenu(UserAction type) {
@@ -251,13 +252,40 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
 
         insertBoundaryBtn.addSelectionListener(new SelectionAdapter() {
             public void widgetSelected(SelectionEvent arg0) {
+                // Check if regime is set for each inserted boundary
+                if (boundarylayer.getBoundaryState().boundariesMap.size() != 0) {
+                    Iterator<Integer> iterator = boundarylayer
+                            .getBoundaryState().boundariesMap.keySet()
+                            .iterator();
+                    int boundaryId;
+                    String s = "";
+                    while (iterator.hasNext()) {
+                        boundaryId = iterator.next();
+                        if (boundarylayer.getBoundaryState().boundaryTypeMap
+                                .get(boundaryId) == null) {
+                            s = s + boundaryId;
+                        }
+
+                    }
+                    if (!s.isEmpty()) {
+                        MessageDialog.openWarning(Display.getCurrent()
+                                .getActiveShell(),
+                                "Previous Boundary Type Not Set",
+                                "Please set the boundary type" + " for ids: " + s
+                                        + " before inserting another boundary");
+                        return;
+                    }
+                }
                 updateDisplayType(UserAction.INSERT_BOUNDARY);
                 Display display = Display.getCurrent();
-                // Highlight "Save Boundary Data" button is red: data not yet
-                // save after a new boundary
-                // is inserted or an existing boundary is modified.
+                /*
+                 * Highlight "Save Boundary Data" button is red: data not yet
+                 * save after a new boundary is inserted or an existing boundary
+                 * is modified.
+                 */
                 saveDataBtn.setBackground(display.getSystemColor(SWT.COLOR_RED));
             }
+
         });
         deleteBtn = new Button(boundaryFieldComposite, SWT.PUSH);
         deleteBtn.setText("Delete Boundary...");
@@ -577,7 +605,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
                     }
 
                 }
-                if (s != "") {
+                if (!s.isEmpty()) {
                     // Need to define the boundary type before saving
                     // the data
                     MessageBox messageBox = new MessageBox(getShell(),
@@ -710,7 +738,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
                         .remove(boundarylayer.getBoundaryState().boundaryId);
                 boundarylayer.getBoundaryState().timePointsMap
                         .remove(boundarylayer.getBoundaryState().boundaryId);
-                boundarylayer.getBoundaryState().moveNotAllowed = false;
+                boundarylayer.getBoundaryState().dragingLineNotAllowed = false;
                 boundarylayer.getBoundaryState().lineIsMoving = false;
 
             } else {
@@ -732,7 +760,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
                             boundarylayer.getBoundaryState().boundaryId, true);
                     // Setting speed for newly created moving boundary
                     // Need to move to another frame
-                    boundarylayer.getBoundaryState().moveNotAllowed = true;
+                    boundarylayer.getBoundaryState().dragingLineNotAllowed = true;
                     boundarylayer.getBoundaryState().lineIsMoving = true;
                 }
                 boundarylayer.getBoundaryState().existingBoundaryNotEmptyMap
@@ -777,7 +805,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
                 motionCbo.setItems(modeStrings);
                 motionCbo.setText(Stationary);
                 boundarylayer.getBoundaryState().lineIsMoving = false;
-                boundarylayer.getBoundaryState().moveNotAllowed = false;
+                boundarylayer.getBoundaryState().dragingLineNotAllowed = false;
                 boundarylayer.getBoundaryState().movingEdited = false;
             }
             break;
@@ -864,13 +892,14 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
             if (boundarylayer.getBoundaryState().isMovingMap.get(id) == true) {
                 s = Moving;
                 boundarylayer.getBoundaryState().lineIsMoving = true;
-                boundarylayer.getBoundaryState().moveNotAllowed = true;
+                boundarylayer.getBoundaryState().dragingLineNotAllowed = true;
                 boundarylayer.getBoundaryState().movingEdited = true;
+
                 adjustMotionBtn.setEnabled(true);
             } else {
                 s = Stationary;
                 boundarylayer.getBoundaryState().lineIsMoving = false;
-                boundarylayer.getBoundaryState().moveNotAllowed = false;
+                boundarylayer.getBoundaryState().dragingLineNotAllowed = false;
                 boundarylayer.getBoundaryState().movingEdited = false;
                 adjustMotionBtn.setEnabled(false);
             }

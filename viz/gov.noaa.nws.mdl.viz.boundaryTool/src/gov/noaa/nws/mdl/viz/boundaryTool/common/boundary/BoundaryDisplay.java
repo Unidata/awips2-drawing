@@ -11,7 +11,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TimeZone;
 
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.widgets.Display;
 import org.geotools.referencing.GeodeticCalculator;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -19,6 +21,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.viz.core.DrawableCircle;
+import com.raytheon.uf.viz.core.DrawableLine;
 import com.raytheon.uf.viz.core.DrawableString;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.IGraphicsTarget.HorizontalAlignment;
@@ -57,13 +60,23 @@ public class BoundaryDisplay implements IRenderable {
 
     public final RGB LIGHT_GRAY = new RGB(200, 200, 200);
 
-    private final int editableCircleSize = 50;
+    /*
+     * Boundary type color: Red for warn/Stationary fronts; Blue for cold
+     * fronts; orange for dry line fronts, pink for sea/lake breeze fronts, and
+     * Gray for gust fronts
+     */
 
-    private final int unEditableCircleSize = 90;
+    public static final RGB COLD_FRONT = new RGB(0, 0, 255);
+    public static final RGB WARM_FRONT = new RGB(255, 0, 0);
+    public static final RGB DRY_LINE = new RGB(249, 104, 12);
+    public static final RGB SEA_BREEZE = new RGB(255, 0, 206);
+    public static final RGB GUST_FRONTS = new RGB(200, 200, 200);
+
+    private final int editableCircleSize = 45;
+
+    private final int unEditableCircleSize = 25;
 
     private final String dragTextFormat = "Drag %s to %s";
-
-    // private static final double MAX_DIST = 20000000;
 
     private final DateFormat timeFormat = new SimpleDateFormat("HH:mm");
 
@@ -77,8 +90,6 @@ public class BoundaryDisplay implements IRenderable {
 
     private DataTime[] currentDisplayedTimes;
 
-    // private Coordinate theAnchorPoint = null;
-
     /** HashMap to store active boundaries */
     public Map<Integer, LineString> theAnchorLineMap = new HashMap<Integer, LineString>();
 
@@ -89,7 +100,6 @@ public class BoundaryDisplay implements IRenderable {
 
     private BoundaryUtil trackUtil;
 
-    // private Boundary boundaryObject;
     boolean timeUpdated = false;
 
     public BoundaryDisplay(IMapDescriptor descriptor, BoundaryUIManager manager) {
@@ -134,7 +144,6 @@ public class BoundaryDisplay implements IRenderable {
                 && (currentState.timePoints.length != times.length || !times[currentFrame]
                         .equals(currentState.timePoints[currentFrame].time,
                                 true))) {
-
             int oldPivot = currentState.pivotIndex;
             trackUtil.setPivotIndexes(paintProps.getFramesInfo(), currentState);
 
@@ -151,9 +160,10 @@ public class BoundaryDisplay implements IRenderable {
             }
 
             if (currentFrame == currentState.displayedPivotIndex) {
-                if (currentState.displayedPivotIndex == currentState.pivotIndex) {
+                if (currentState.displayedPivotIndex == currentState.pivotIndex
+                        && currentState.otherPivotIndex >= 0) {
                     currentState.displayedPivotIndex = currentState.otherPivotIndex;
-                } else {
+                } else if (currentState.pivotIndex >= 0) {
                     currentState.displayedPivotIndex = currentState.pivotIndex;
                 }
             }
@@ -175,9 +185,10 @@ public class BoundaryDisplay implements IRenderable {
                 currentState.displayedPivotIndex = currentState.pivotIndex;
                 currentState.nextPivotIndex = -1;
             } else if (currentFrame == currentState.displayedPivotIndex) {
-                if (currentState.displayedPivotIndex == currentState.pivotIndex) {
+                if (currentState.displayedPivotIndex == currentState.pivotIndex
+                        && currentState.otherPivotIndex >= 0) {
                     currentState.displayedPivotIndex = currentState.otherPivotIndex;
-                } else {
+                } else if (currentState.pivotIndex >= 0) {
                     currentState.displayedPivotIndex = currentState.pivotIndex;
                 }
             } else if (currentFrame != currentState.displayedPivotIndex) {
@@ -227,7 +238,6 @@ public class BoundaryDisplay implements IRenderable {
 
             currentState.dragMeLine = currentState.boundariesMap
                     .get(currentState.boundaryId);
-            // currentState.mode = Mode.TRACK;
             if (!currentState.boundariesMap.isEmpty()) {
                 paintPolyMode(target, paintProps);
             }
@@ -249,7 +259,7 @@ public class BoundaryDisplay implements IRenderable {
                 paintPolyMode(target, paintProps);
             }
             currentState.editedLineForMotionComputation = null;
-            currentState.moveNotAllowed = true;
+            currentState.dragingLineNotAllowed = true;
             break;
         }
 
@@ -272,6 +282,8 @@ public class BoundaryDisplay implements IRenderable {
             currentState.editedLineForMotionComputation = null;
             currentState.motionIndex = currentFrame;
             currentState.lineIsMoving = false;
+            currentState.movingEdited = false;
+            currentState.dragingLineNotAllowed = false;
             break;
         }
 
@@ -280,7 +292,7 @@ public class BoundaryDisplay implements IRenderable {
                 paintPolyMode(target, paintProps);
                 currentState.dialogObject.setBtnFalseAfterCancelAction();
                 currentState.editedLineForMotionComputation = null;
-                currentState.moveNotAllowed = true;
+                currentState.dragingLineNotAllowed = true;
             }
             break;
         }
@@ -289,7 +301,8 @@ public class BoundaryDisplay implements IRenderable {
             if (!currentState.boundariesMap.isEmpty()) {
                 paintPolyMode(target, paintProps);
                 currentState.dialogObject.setBtnFalseAfterCancelAction();
-                currentState.moveNotAllowed = true;
+                currentState.editedLineForMotionComputation = null;
+                currentState.dragingLineNotAllowed = true;
             }
             break;
         }
@@ -311,9 +324,10 @@ public class BoundaryDisplay implements IRenderable {
         switch (currentState.mode) {
 
         case DRAG_ME: {
+
             paintDragMeLine(target, paintProps);
             paintDragMeText(target, paintProps, currentState.dragMeLine);
-            currentState.moveNotAllowed = false;
+            currentState.dragingLineNotAllowed = false;
             break;
         }
 
@@ -324,8 +338,10 @@ public class BoundaryDisplay implements IRenderable {
                 paintDragMeText(target, paintProps, currentState.dragMeLine);
             }
 
-            // Ama: Jan 11, 2011: Enabling send button when user modifies a
-            // stationary boundary line
+            /*
+             * Ama: Jan 11, 2011: Enabling send button when user modifies a
+             * stationary boundary line
+             */
             if (!currentState.isMovingMap.get(currentState.boundaryId)
                     && currentState.prevBoundary != null) {
                 Coordinate[] prevCoords = currentState.prevBoundary
@@ -389,15 +405,8 @@ public class BoundaryDisplay implements IRenderable {
                     * state.lineOfStormsLength;
             gc.setStartingGeographicPoint(worldPixel[0], worldPixel[1]);
             double startAngle = state.angle;
-            double firstAngle = Double.NaN;
-            double secondAngle = Double.NaN;
-            if (Double.isNaN(startAngle)) {
-                firstAngle = 180;
-                secondAngle = 360;
-            } else {
-                firstAngle = startAngle - 90;
-                secondAngle = startAngle + 90;
-            }
+            double firstAngle = startAngle - 90;
+            double secondAngle = startAngle + 90;
             gc.setDirection(trackUtil.adjustAngle(firstAngle), lengthInMeters);
             Coordinate c1 = new Coordinate(gc.getDestinationGeographicPoint()
                     .getX(), gc.getDestinationGeographicPoint().getY());
@@ -438,9 +447,13 @@ public class BoundaryDisplay implements IRenderable {
             }
         }
 
-        // Time to paint the line. Again, need to handle
-        // if mouseDownGeom set or not
+        /*
+         * Time to paint the line. Again, need to handle if mouseDownGeom set or
+         * not
+         */
         RGB lineColor = state.mouseDownGeom != null ? LIGHT_GRAY : state.color;
+
+        RGB textColor = state.color;
 
         // KS - Need to loop over all lines rather than just paint one
 
@@ -468,12 +481,39 @@ public class BoundaryDisplay implements IRenderable {
                     && state.userAction != UserAction.NONE
                     && state.userAction != UserAction.CANCEL_MODIFICATION) {
                 paintLine(target, boundary.getCoordinates(), lineColor,
-                        state.isEditable(), circleSize, LineStyle.SOLID);
+                        state.lineWidth, state.isEditable(), circleSize,
+                        state.lineStyle);
 
             } else {
 
-                paintLine(target, boundary.getCoordinates(), lineColor, false,
-                        unEditableCircleSize, LineStyle.SOLID);
+                String frontType = state.boundaryTypeMap.get(boundaryId);
+                switch (frontType) {
+                case "COLD FRONT":
+                    lineColor = COLD_FRONT;
+                    textColor = COLD_FRONT;
+                    break;
+                case "STATIONARY/WARM FRONT":
+                    lineColor = WARM_FRONT;
+                    textColor = WARM_FRONT;
+                    break;
+                case "DRY LINE":
+                    lineColor = DRY_LINE;
+                    textColor = DRY_LINE;
+                    break;
+                case "SEA/LAKE BREEZE":
+                    lineColor = SEA_BREEZE;
+                    textColor = SEA_BREEZE;
+                    break;
+                case "GUST FRONT":
+                    lineColor = GUST_FRONTS;
+                    textColor = GUST_FRONTS;
+                    break;
+
+                }
+
+                paintLine(target, boundary.getCoordinates(), lineColor,
+                        state.lineWidth, false, unEditableCircleSize,
+                        state.lineStyle);
                 lineColor = state.color;
             }
 
@@ -483,15 +523,15 @@ public class BoundaryDisplay implements IRenderable {
             Coordinate toUseId = null;
             toUseId = new Coordinate(last.x, last.y);
             String text = "" + boundaryId;
-            paintTextAtPoint(target, text, toUseId, state.color,
-                    circleSize * 3, ang, magnification);
+            paintTextAtPoint(target, text, toUseId, textColor, circleSize * 3,
+                    ang, magnification);
+            textColor = state.color;
         }
 
         if (state.mouseDownGeom != null) {
-            // Paint the dragging geom
             paintLine(target, state.mouseDownGeom.getCoordinates(),
-                    state.color, state.isEditable(), circleSize,
-                    LineStyle.DOTTED);
+                    state.color, state.lineWidth, state.isEditable(),
+                    circleSize, LineStyle.DOTTED);
             lineColor = LIGHT_GRAY;
         }
     }
@@ -504,20 +544,24 @@ public class BoundaryDisplay implements IRenderable {
      *            coordinates in the line
      * @param color
      *            color of the line
+     * @param lineWidth
      * @param editable
      *            if the line is editable
      * @throws VizException
      */
-    @SuppressWarnings("deprecation")
     private void paintLine(IGraphicsTarget target, Coordinate[] coords,
-            RGB color, boolean editable, double circleSize, LineStyle style)
-            throws VizException {
+            RGB color, float lineWidth, boolean editable, double circleSize,
+            LineStyle style) throws VizException {
         DrawableCircle circle = new DrawableCircle();
         circle.basics.color = color;
         circle.radius = circleSize;
         circle.filled = true;
 
-        Coordinate lastCoord = null;
+        DrawableLine line = new DrawableLine();
+        line.basics.color = color;
+        line.width = lineWidth;
+        line.lineStyle = style;
+        double[] p1;
         for (int i = 0; i < coords.length; ++i) {
             Coordinate currCoord = coords[i];
             if (currCoord != null) {
@@ -525,25 +569,18 @@ public class BoundaryDisplay implements IRenderable {
                 if (editable) {
                     paintPoint(target, currCoord, color, circleSize);
                 } else {
-                    double[] p1 = descriptor.worldToPixel(new double[] {
-                            currCoord.x, currCoord.y });
+                    p1 = descriptor.worldToPixel(new double[] { currCoord.x,
+                            currCoord.y });
                     circle.setCoordinates(p1[0], p1[1]);
                     target.drawCircle(circle);
                 }
 
-                // paint line if lastCoord not null
-                if (lastCoord != null) {
-                    double[] p1 = descriptor.worldToPixel(new double[] {
-                            currCoord.x, currCoord.y });
-                    double[] p2 = descriptor.worldToPixel(new double[] {
-                            lastCoord.x, lastCoord.y });
-
-                    target.drawLine(p1[0], p1[1], 0.0, p2[0], p2[1], 0.0,
-                            color, 3.0f, style);
-                }
+                p1 = descriptor.worldToPixel(new double[] { currCoord.x,
+                        currCoord.y });
+                line.addPoint(p1[0], p1[1]);
             }
-            lastCoord = currCoord;
         }
+        target.drawLine(line);
     }
 
     /**
@@ -709,6 +746,7 @@ public class BoundaryDisplay implements IRenderable {
         int frameCount = trackUtil.getFrameCount(paintProps.getFramesInfo());
         int currFrame = trackUtil.getCurrentFrame(paintProps.getFramesInfo());
         DataTime[] times = trackUtil.getDataTimes(paintProps.getFramesInfo());
+
         /*
          * Ama: October 4, 2011 when time updates, update position for all
          * active moving boundaries at the current time Resetting to polyline to
@@ -736,8 +774,10 @@ public class BoundaryDisplay implements IRenderable {
 
         }
 
-        // Now looping moving boundaries to update their position if the time
-        // update
+        /*
+         * Now looping moving boundaries to update their position if the time
+         * update
+         */
         for (int bndId : activeBoundariesMap.keySet()) {
             if (update || currentState.existingBoundaryNotEmptyMap.get(bndId)) {
                 currentState.boundaryId = bndId;
@@ -806,7 +846,6 @@ public class BoundaryDisplay implements IRenderable {
                                 .remove(currentState.boundaryId);
                         currentState.lineMovedMap.put(currentState.boundaryId,
                                 false);
-                        // currentState.resetAnchor = false;
                     } else if (update && currentState.timePoints != null) {
                         this.theAnchorLineMap.remove(currentState.boundaryId);
                         this.theAnchorLineMap.put(currentState.boundaryId,
@@ -860,7 +899,6 @@ public class BoundaryDisplay implements IRenderable {
                                 .remove(currentState.boundaryId);
                         currentState.lineMovedMap.put(currentState.boundaryId,
                                 false);
-                        currentState.originalTrack = false;
                         moved = true;
                     }
 
@@ -928,20 +966,22 @@ public class BoundaryDisplay implements IRenderable {
             PaintProperties paintProps) {
         int moveIndex = this.trackUtil.getCurrentFrame(paintProps
                 .getFramesInfo());
+        moveIndex = Math.min(moveIndex, state.timePoints.length - 1);
         int pivotIndex = state.displayedPivotIndex;
+        pivotIndex = Math.min(pivotIndex, state.timePoints.length - 1);
         BoundaryPolyLine startCoordForMotion;
         BoundaryPolyLine endCoordForMotion;
-
+        int startCoordIndex;
+        int endCoordIndex;
         state.timePoints = state.timePointsMap.get(state.boundaryId);
 
         state.timePoints[moveIndex].polyline = state.dragMePointMap
                 .get(state.boundaryId);
 
-        int startCoordIndex = pivotIndex < moveIndex ? pivotIndex : moveIndex;
-        int endCoordIndex = pivotIndex < moveIndex ? moveIndex : pivotIndex;
-
+        startCoordIndex = pivotIndex < moveIndex ? pivotIndex : moveIndex;
+        endCoordIndex = pivotIndex < moveIndex ? moveIndex : pivotIndex;
         if (startCoordIndex < moveIndex) {
-            startCoordIndex = moveIndex;
+            startCoordIndex = endCoordIndex = moveIndex;
         }
 
         BoundaryPolyLine startCoord = state.timePoints[startCoordIndex];
@@ -961,109 +1001,125 @@ public class BoundaryDisplay implements IRenderable {
         BoundaryPolyLine[] timePoints = new BoundaryPolyLine[state.timePoints.length];
 
         /*
-         * Motion computation for moving boundary
-         * editedLineForMotionComputation: original boundary at creation time
+         * If the user does not select another frame different of the frame
+         * where the line is created, nothing will happens until she move to
+         * another frame (a message will pop up to remind the user to select a
+         * different frame).
          */
-        if (state.editedLineForMotionComputation != null) {
-            startCoordForMotion = state.timePoints[moveIndex];
-            endCoordForMotion = state.timePoints[state.displayedIndexAtStartMotionCompute];
+        if (state.lineIsMoving && (moveIndex == state.frameAtCreationTime)
+                && state.editedLineForMotionComputation != null) {
+            state.timePoints[moveIndex].polyline = state.editedLineForMotionComputation;
+            MessageDialog.openWarning(Display.getCurrent().getActiveShell(),
+                    "Invalid Action",
+                    "Please change the frame to generate boundary motion");
 
-            Coordinate[] lineStartCoordsForMotion;
+        } else {
+            /*
+             * Motion computation for moving boundary
+             * editedLineForMotionComputation: original boundary at creation
+             * time
+             */
+            if (state.editedLineForMotionComputation != null) {
+                startCoordForMotion = state.timePoints[moveIndex];
+                endCoordForMotion = state.timePoints[state.displayedIndexAtStartMotionCompute];
 
-            lineStartCoordsForMotion = startCoordForMotion.polyline
-                    .getCoordinates();
-            lineEndCoords = state.editedLineForMotionComputation
-                    .getCoordinates();
-            if (lineStartCoordsForMotion.length == lineEndCoords.length
-                    && state.isEditable()) {
+                Coordinate[] lineStartCoordsForMotion;
+
+                lineStartCoordsForMotion = startCoordForMotion.polyline
+                        .getCoordinates();
+                lineEndCoords = state.editedLineForMotionComputation
+                        .getCoordinates();
+                if (lineStartCoordsForMotion.length == lineEndCoords.length
+                        && state.isEditable()) {
+
+                    GeodeticCalculator gc = new GeodeticCalculator();
+                    for (int j = 0; j < lineStartCoordsForMotion.length; j++) {
+
+                        if (state.displayedIndexAtStartMotionCompute > moveIndex) {
+                            gc.setStartingGeographicPoint(
+                                    lineStartCoordsForMotion[j].x,
+                                    lineStartCoordsForMotion[j].y);
+                            gc.setDestinationGeographicPoint(
+                                    lineEndCoords[j].x, lineEndCoords[j].y);
+                        } else {
+                            gc.setStartingGeographicPoint(lineEndCoords[j].x,
+                                    lineEndCoords[j].y);
+                            gc.setDestinationGeographicPoint(
+                                    lineStartCoordsForMotion[j].x,
+                                    lineStartCoordsForMotion[j].y);
+
+                        }
+                        angle = gc.getAzimuth();
+                        oppositeAngle = trackUtil.adjustAngle(angle + 180);
+                        speed = gc.getOrthodromicDistance()
+                                / trackUtil.timeBetweenDataTimes(
+                                        startCoordForMotion.time,
+                                        endCoordForMotion.time);
+                        state.vertexAngle[j] = (float) angle;
+                        state.vertexSpeed[j] = (float) speed;
+                    }
+                }
+                state.editedLineForMotionComputation = null;
+
+            }
+
+            timePoints[startCoordIndex] = startCoord;
+            timePoints[endCoordIndex] = endCoord;
+
+            for (int i = timePoints.length - 1; i >= 0; --i) {
+                if (i == startCoordIndex || i == endCoordIndex) {
+                    continue;
+                }
+
+                DataTime coordTime = state.timePoints[i].time;
 
                 GeodeticCalculator gc = new GeodeticCalculator();
-                for (int j = 0; j < lineStartCoordsForMotion.length; j++) {
+                for (int j = 0; j < lineStartCoords.length; j++) {
 
-                    if (state.displayedIndexAtStartMotionCompute > moveIndex) {
-                        gc.setStartingGeographicPoint(
-                                lineStartCoordsForMotion[j].x,
-                                lineStartCoordsForMotion[j].y);
-                        gc.setDestinationGeographicPoint(lineEndCoords[j].x,
-                                lineEndCoords[j].y);
-                    } else {
-                        gc.setStartingGeographicPoint(lineEndCoords[j].x,
-                                lineEndCoords[j].y);
-                        gc.setDestinationGeographicPoint(
-                                lineStartCoordsForMotion[j].x,
-                                lineStartCoordsForMotion[j].y);
+                    oppositeAngle = trackUtil
+                            .adjustAngle(state.vertexAngle[j] + 180);
+                    gc.setStartingGeographicPoint(lineStartCoords[j].x,
+                            lineStartCoords[j].y);
 
+                    double distance = state.vertexSpeed[j]
+                            * trackUtil.timeBetweenDataTimes(startCoord.time,
+                                    coordTime);
+                    if (i > startCoordIndex) {
+                        gc.setDirection(state.vertexAngle[j], distance);
+                    } else if (i < startCoordIndex) {
+                        gc.setDirection(oppositeAngle, distance);
                     }
-                    angle = gc.getAzimuth();
-                    oppositeAngle = trackUtil.adjustAngle(angle + 180);
-                    speed = gc.getOrthodromicDistance()
-                            / trackUtil.timeBetweenDataTimes(
-                                    startCoordForMotion.time,
-                                    endCoordForMotion.time);
-                    state.vertexAngle[j] = (float) angle;
-                    state.vertexSpeed[j] = (float) speed;
-
-                    // Tempory fix to prevent a resource error because
-                    if (Double.isNaN(speed)) {
-                        return;
-                    }
+                    Point2D point = gc.getDestinationGeographicPoint();
+                    endVertices[j] = new Coordinate(point.getX(), point.getY());
                 }
-            }
-        }
+                if (state.vertexSpeedMap.get(state.boundaryId) != null) {
+                    state.vertexSpeedMap.remove(state.boundaryId);
+                    state.vertexAngleMap.remove(state.boundaryId);
+                    state.vertexAngleMap.put(state.boundaryId,
+                            state.vertexAngle);
+                    state.vertexSpeedMap.put(state.boundaryId,
+                            state.vertexSpeed);
+                } else {
+                    state.vertexAngleMap.put(state.boundaryId,
+                            state.vertexAngle);
+                    state.vertexSpeedMap.put(state.boundaryId,
+                            state.vertexSpeed);
 
-        timePoints[startCoordIndex] = startCoord;
-        timePoints[endCoordIndex] = endCoord;
-
-        for (int i = timePoints.length - 1; i >= 0; --i) {
-            if (i == startCoordIndex || i == endCoordIndex) {
-                continue;
-            }
-
-            DataTime coordTime = state.timePoints[i].time;
-
-            GeodeticCalculator gc = new GeodeticCalculator();
-            for (int j = 0; j < lineStartCoords.length; j++) {
-
-                oppositeAngle = trackUtil
-                        .adjustAngle(state.vertexAngle[j] + 180);
-                gc.setStartingGeographicPoint(lineStartCoords[j].x,
-                        lineStartCoords[j].y);
-
-                double distance = state.vertexSpeed[j]
-                        * trackUtil.timeBetweenDataTimes(startCoord.time,
-                                coordTime);
-                if (i > startCoordIndex) {
-                    gc.setDirection(state.vertexAngle[j], distance);
-                } else if (i < startCoordIndex) {
-                    gc.setDirection(oppositeAngle, distance);
                 }
-                Point2D point = gc.getDestinationGeographicPoint();
-                endVertices[j] = new Coordinate(point.getX(), point.getY());
-            }
-            if (state.vertexSpeedMap.get(state.boundaryId) != null) {
-                state.vertexSpeedMap.remove(state.boundaryId);
-                state.vertexAngleMap.remove(state.boundaryId);
-                state.vertexAngleMap.put(state.boundaryId, state.vertexAngle);
-                state.vertexSpeedMap.put(state.boundaryId, state.vertexSpeed);
-            } else {
-                state.vertexAngleMap.put(state.boundaryId, state.vertexAngle);
-                state.vertexSpeedMap.put(state.boundaryId, state.vertexSpeed);
 
-            }
+                Coordinate[] newLineCoords = new Coordinate[lineEndCoords.length];
+                for (int k = 0; k < lineEndCoords.length; k++) {
+                    newLineCoords[k] = endVertices[k];
 
-            Coordinate[] newLineCoords = new Coordinate[lineEndCoords.length];
-            for (int k = 0; k < lineEndCoords.length; k++) {
-                newLineCoords[k] = endVertices[k];
-
+                }
+                LineString line = new GeometryFactory()
+                        .createLineString(newLineCoords);
+                timePoints[i] = new BoundaryPolyLine(line, coordTime);
             }
-            LineString line = new GeometryFactory()
-                    .createLineString(newLineCoords);
-            timePoints[i] = new BoundaryPolyLine(line, coordTime);
+            state.timePointsMap.remove(state.boundaryId);
+
+            state.timePointsMap.put(state.boundaryId, timePoints);
         }
-        state.timePointsMap.remove(state.boundaryId);
-
-        state.timePointsMap.put(state.boundaryId, timePoints);
-        state.moveNotAllowed = false;
     }
 
     private void generateNewTrackInfo(BoundaryState state, int anchorIndex,
@@ -1098,8 +1154,10 @@ public class BoundaryDisplay implements IRenderable {
         if (state.timePointsMap.get(state.boundaryId) == null
                 || isUpdatedDataTimes(paintProps)) {
 
-            // Compute/retrieve vertex coordinate of the starting position of
-            // the line
+            /*
+             * Compute/retrieve vertex coordinate of the starting position of
+             * the line
+             */
             Coordinate[] lineCoords = anchor.polyline.getCoordinates();
             Coordinate[] vertices = new Coordinate[lineCoords.length];
 
@@ -1123,14 +1181,12 @@ public class BoundaryDisplay implements IRenderable {
 
                 for (int j = 0; j < lineCoords.length; j++) {
 
-                    // If uninitialized, grab from tools data manager
-
                     Coordinate[] coords = state.boundariesMap.get(
                             state.boundaryId).getCoordinates();
                     if (state.vertexSpeed == null || state.vertexAngle == null) {
                         state.vertexSpeed[j] = vertexSpeed[j];
 
-                         // calculate based on polyline
+                        // calculate based on polyline
                         GeodeticCalculator gc = new GeodeticCalculator();
                         gc.setStartingGeographicPoint(coords[j].x, coords[j].y);
                         gc.setDestinationGeographicPoint(
