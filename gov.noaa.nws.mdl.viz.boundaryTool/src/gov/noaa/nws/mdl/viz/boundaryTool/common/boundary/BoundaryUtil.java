@@ -59,11 +59,6 @@ public class BoundaryUtil {
             boundaryState.otherPivotIndex = 0;
             boundaryState.nextPivotIndex = -1;
             boundaryState.pivotIndex = lastFrame;
-            // Ama March 26, 2013.
-            if (boundaryState.editedLineForMotionComputation != null) {
-                boundaryState.nextPivotIndex = -boundaryState.displayedIndexAtStartMotionCompute;
-                boundaryState.pivotIndex = boundaryState.displayedIndexAtStartMotionCompute;
-            }
         }
     }
 

@@ -67,9 +67,13 @@ public class BoundaryDisplay implements IRenderable {
      */
 
     public static final RGB COLD_FRONT = new RGB(0, 0, 255);
+
     public static final RGB WARM_FRONT = new RGB(255, 0, 0);
+
     public static final RGB DRY_LINE = new RGB(249, 104, 12);
+
     public static final RGB SEA_BREEZE = new RGB(255, 0, 206);
+
     public static final RGB GUST_FRONTS = new RGB(200, 200, 200);
 
     private final int editableCircleSize = 45;
@@ -154,7 +158,6 @@ public class BoundaryDisplay implements IRenderable {
                     currentState.otherPivotIndex = 0;
                 }
             }
-
             if (currentState.displayedPivotIndex == oldPivot) {
                 currentState.displayedPivotIndex = currentState.pivotIndex;
             }
@@ -332,7 +335,8 @@ public class BoundaryDisplay implements IRenderable {
         }
 
         case TRACK: {
-            generateTrackInfo(currentState, paintProps);
+            DataTime frameTime = paintProps.getDataTime();
+            generateTrackInfo(currentState, paintProps, frameTime);
             paintDragMeLine(target, paintProps);
             if (trackUtil.getDataTimes(paintProps.getFramesInfo()).length == 1) {
                 paintDragMeText(target, paintProps, currentState.dragMeLine);
@@ -742,7 +746,7 @@ public class BoundaryDisplay implements IRenderable {
      * @param currentState
      */
     private void generateTrackInfo(BoundaryState currentState,
-            PaintProperties paintProps) throws VizException {
+            PaintProperties paintProps, DataTime frameTime) throws VizException {
         int frameCount = trackUtil.getFrameCount(paintProps.getFramesInfo());
         int currFrame = trackUtil.getCurrentFrame(paintProps.getFramesInfo());
         DataTime[] times = trackUtil.getDataTimes(paintProps.getFramesInfo());
@@ -803,19 +807,27 @@ public class BoundaryDisplay implements IRenderable {
                      */
                     if (currentState.timePoints != null
                             && currentState.timePoints.length != frameCount) {
+                        /*
+                         * need to set theAnchorPoint and theAnchorIndex here
+                         * because timePoints get erased before we get to
+                         * updateAnchorPoint
+                         */
+                        for (int j = 0; j < currentState.timePoints.length; j++) {
+                            if (frameTime
+                                    .equals(currentState.timePoints[j].time)) {
+                                theAnchorLineMap
+                                        .remove(currentState.boundaryId);
+                                theAnchorLineMap.put(currentState.boundaryId,
+                                        currentState.timePoints[j].polyline);
+                                theAnchorIndex = j;
+                            }
+                        }
                         currentState.timePoints = null;
 
                         currentState.timePointsMap
                                 .remove(currentState.boundaryId);
                         currentState.timePointsMap.put(currentState.boundaryId,
                                 currentState.timePoints);
-                    }
-
-                    if (currentState.timePointsMap.get(currentState.boundaryId) == null) {
-                        if (this.theAnchorLineMap.get(currentState.boundaryId) != null) {
-                            this.theAnchorLineMap
-                                    .remove(currentState.boundaryId);
-                        }
                     }
 
                     if (currentState.newDuration != -1) {
@@ -877,7 +889,7 @@ public class BoundaryDisplay implements IRenderable {
                     currentState.displayedIndexAtStartMotionCompute = this.trackUtil
                             .getCurrentFrame(paintProps.getFramesInfo());
 
-                    generateTrackInfo(currentState, paintProps);
+                    generateTrackInfo(currentState, paintProps, frameTime);
                 } else {
                     if (currentState.lineMovedMap.get(currentState.boundaryId)) {
                         if (currentState.userAction == UserAction.EDIT_BOUNDARY) {

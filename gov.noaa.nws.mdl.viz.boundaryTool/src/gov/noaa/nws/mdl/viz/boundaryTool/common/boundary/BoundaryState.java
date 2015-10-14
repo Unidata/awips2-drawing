@@ -226,8 +226,6 @@ public class BoundaryState {
     /** set magnification to default value */
     public float magnification = 1.0f;
 
-    public boolean existingBoundaryNotEmpty = false;
-
     public Map<Integer, Boolean> existingBoundaryNotEmptyMap = new HashMap<Integer, Boolean>();
 
     public DataTime creationFileTime = null;
