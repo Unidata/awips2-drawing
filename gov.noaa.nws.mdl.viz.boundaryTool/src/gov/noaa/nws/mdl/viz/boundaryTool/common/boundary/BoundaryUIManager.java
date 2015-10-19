@@ -140,6 +140,7 @@ public class BoundaryUIManager extends InputAdapter {
                 if (state.mode == BoundaryState.Mode.DRAG_ME) {
                     if (container.getLoopProperties().isLooping()) {
                         container.getLoopProperties().setLooping(false);
+                        state.loopingWasOn = true;
                     }
                 }
                 movePointIndex = idx;
