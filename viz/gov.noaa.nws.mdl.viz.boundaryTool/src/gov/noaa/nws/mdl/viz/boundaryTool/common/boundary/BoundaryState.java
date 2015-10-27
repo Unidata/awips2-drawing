@@ -75,10 +75,6 @@ public class BoundaryState {
 
     public Map<Integer, Boolean> isMovingMap = new HashMap<Integer, Boolean>();
 
-    public boolean resetAnchor = false;
-
-    public boolean originalTrack = true;
-
     public boolean isEditable() {
         return editable;
     }
@@ -106,7 +102,11 @@ public class BoundaryState {
     public LineString dragMeLine;
     public LineString editedLineForMotionComputation;
     public int displayedIndexAtStartMotionCompute;
-
+    public int frameAtCreationTime = 0;
+    public int motionIndex;
+    public boolean dragingLineNotAllowed = false;
+    public boolean lineIsMoving = false;
+    public boolean movingEdited = false;
     public LineString prevBoundary;
 
     /** Map to store active boundaries */
@@ -225,8 +225,6 @@ public class BoundaryState {
 
     /** set magnification to default value */
     public float magnification = 1.0f;
-
-    public boolean existingBoundaryNotEmpty = false;
 
     public Map<Integer, Boolean> existingBoundaryNotEmptyMap = new HashMap<Integer, Boolean>();
 

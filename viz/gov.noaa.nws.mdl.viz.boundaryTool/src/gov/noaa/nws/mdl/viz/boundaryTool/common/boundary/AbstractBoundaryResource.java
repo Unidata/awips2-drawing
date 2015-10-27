@@ -194,7 +194,7 @@ public abstract class AbstractBoundaryResource extends
 
         display.paint(target, newProps);
 
-        // manager.setHandleInput(displayState.isEditable());
+         manager.setHandleInput(displayState.isEditable());
     }
 
     @Override
