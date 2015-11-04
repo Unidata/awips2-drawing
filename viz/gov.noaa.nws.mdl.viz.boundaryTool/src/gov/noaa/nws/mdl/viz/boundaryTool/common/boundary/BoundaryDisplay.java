@@ -520,28 +520,38 @@ public class BoundaryDisplay implements IRenderable {
             } else {
 
                 String frontType = state.boundaryTypeMap.get(boundaryId);
-                switch (frontType) {
-                case "COLD FRONT":
-                    lineColor = COLD_FRONT;
-                    textColor = COLD_FRONT;
-                    break;
-                case "STATIONARY/WARM FRONT":
-                    lineColor = WARM_FRONT;
-                    textColor = WARM_FRONT;
-                    break;
-                case "DRY LINE":
-                    lineColor = DRY_LINE;
-                    textColor = DRY_LINE;
-                    break;
-                case "SEA/LAKE BREEZE":
-                    lineColor = SEA_BREEZE;
-                    textColor = SEA_BREEZE;
-                    break;
-                case "GUST FRONT":
-                    lineColor = GUST_FRONTS;
-                    textColor = GUST_FRONTS;
-                    break;
+                /*
+                 * check if frontType is null; this will prevent null exception
+                 * when the user load the tool while the looping was on and they
+                 * insert new boundary.
+                 */
 
+                if (frontType == null) {
+                    lineColor = state.color;
+                } else {
+                    switch (frontType) {
+                    case "COLD FRONT":
+                        lineColor = COLD_FRONT;
+                        textColor = COLD_FRONT;
+                        break;
+                    case "STATIONARY/WARM FRONT":
+                        lineColor = WARM_FRONT;
+                        textColor = WARM_FRONT;
+                        break;
+                    case "DRY LINE":
+                        lineColor = DRY_LINE;
+                        textColor = DRY_LINE;
+                        break;
+                    case "SEA/LAKE BREEZE":
+                        lineColor = SEA_BREEZE;
+                        textColor = SEA_BREEZE;
+                        break;
+                    case "GUST FRONT":
+                        lineColor = GUST_FRONTS;
+                        textColor = GUST_FRONTS;
+                        break;
+
+                    }
                 }
 
                 paintLine(target, boundary.getCoordinates(), lineColor,

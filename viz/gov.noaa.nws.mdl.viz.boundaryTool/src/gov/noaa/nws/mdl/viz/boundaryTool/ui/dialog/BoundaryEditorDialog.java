@@ -922,7 +922,8 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
                         .setText(boundarylayer.getBoundaryState().boundaryTypeMap
                                 .get(id));
             } else {
-                regimeCbo.setText("---");
+                // this will prevent a null exception
+                regimeCbo.setText("Boundary type not yet defined");
             }
             if (boundarylayer.getBoundaryState().isMovingMap.get(id) == true) {
                 s = Moving;
