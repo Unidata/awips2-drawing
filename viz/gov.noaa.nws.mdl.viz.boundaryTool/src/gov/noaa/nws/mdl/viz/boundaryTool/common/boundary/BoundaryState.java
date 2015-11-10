@@ -100,13 +100,25 @@ public class BoundaryState {
 
     /** Drag me line */
     public LineString dragMeLine;
+
     public LineString editedLineForMotionComputation;
+
     public int displayedIndexAtStartMotionCompute;
+
     public int frameAtCreationTime = 0;
+
     public int motionIndex;
+
     public boolean dragingLineNotAllowed = false;
+
     public boolean lineIsMoving = false;
+
     public boolean movingEdited = false;
+
+    public boolean loopingWasOn = false;
+
+    public boolean motionIsResetToStationary = false;
+
     public LineString prevBoundary;
 
     /** Map to store active boundaries */
@@ -124,7 +136,9 @@ public class BoundaryState {
     /** Drag me line creation/modification time */
     // public DataTime createTime;
     public Map<Integer, DataTime> createTimeMap = new HashMap<Integer, DataTime>();
+
     public Map<Integer, DataTime> editedTimeMap = new HashMap<Integer, DataTime>();
+
     /** Drag me line expiration time */
     // public DataTime createTime;
     public Map<Integer, DataTime> expirationTimeMap = new HashMap<Integer, DataTime>();
@@ -139,6 +153,7 @@ public class BoundaryState {
 
     // parameters passed to method saving the data
     public int timeIndex = 0;
+
     public DataTime[] currentDataTimes = null;
 
     public BoundaryEditorDialog dialogObject = null;
@@ -184,6 +199,7 @@ public class BoundaryState {
     public int boundaryId;
 
     public String fileName;
+
     /**
      * size of line of storms, not sure about units. Used when poly line is
      * first constructed
@@ -235,6 +251,7 @@ public class BoundaryState {
     public int boundaryDuration = 8;
 
     public Map<Integer, Integer> boundaryDurationMap = new HashMap<Integer, Integer>();
+
     /** Set if you the duration needs to be calculated from the end time */
     public Calendar endTime = null;
 

@@ -248,7 +248,11 @@ public class BoundaryEditorLayer extends AbstractBoundaryResource {
      */
     @Override
     protected void initializeState(BoundaryState state) {
-
+        IDisplayPaneContainer container = getResourceContainer();
+        if (container.getLoopProperties().isLooping()) {
+            container.getLoopProperties().setLooping(false);
+            state.loopingWasOn = true;
+        }
         FramesInfo info = descriptor.getFramesInfo();
         // Setup the initial state for the storm track
         // Default angle for POINT
