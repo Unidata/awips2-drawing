@@ -357,7 +357,6 @@ public class BoundaryDisplay implements IRenderable {
         case TRACK: {
             if (currentState.loopingWasOn) {
                 currentState.loopingWasOn = false;
-                currentState.userAction = UserAction.NONE;
                 break;
             }
             DataTime frameTime = paintProps.getDataTime();
