@@ -1139,17 +1139,7 @@ public class BoundaryDisplay implements IRenderable {
                     if (state.vertexSpeed[j]
                             * trackUtil.timeBetweenDataTimes(startCoord.time,
                                     coordTime) > MAX_DIST) {
-                        MessageDialog
-                                .openWarning(
-                                        Display.getCurrent().getActiveShell(),
-                                        "Invalid Action for setting the motion",
-                                        "Please follow the proper steps in setting the boundary in motion "
-                                                + " The boundary is being reset to stationary \n"
-                                                + " Now retry to set it in motion following these two simple steps: \n"
-                                                + " 1) Select 'Moving' from 'Boundary Mode's dropdown menu \n"
-                                                + " 2) move to another frame "
-                                                + "before dragging the line to the desired position");
-
+                        invalidAction();
                         state.editedLineForMotionComputation = state.boundariesMap
                                 .get(state.boundaryId);
 
@@ -1168,6 +1158,14 @@ public class BoundaryDisplay implements IRenderable {
                     double distance = state.vertexSpeed[j]
                             * trackUtil.timeBetweenDataTimes(startCoord.time,
                                     coordTime);
+                    if (distance > MAX_DIST) {
+                        invalidAction();
+                        state.editedLineForMotionComputation = state.boundariesMap
+                                .get(state.boundaryId);
+
+                        state.dialogObject.outOfrangeError();
+                        return;
+                    }
                     if (i > startCoordIndex) {
                         gc.setDirection(state.vertexAngle[j], distance);
                     } else if (i < startCoordIndex) {
@@ -1289,6 +1287,14 @@ public class BoundaryDisplay implements IRenderable {
                     double distance = state.vertexSpeed[j]
                             * trackUtil.timeBetweenDataTimes(anchor.time,
                                     coordTime);
+                    if (distance > MAX_DIST) {
+                        invalidAction();
+                        state.editedLineForMotionComputation = state.boundariesMap
+                                .get(state.boundaryId);
+
+                        state.dialogObject.outOfrangeError();
+                        return;
+                    }
 
                     if (i > anchorIndex) {
                         gc.setDirection(state.vertexAngle[j], distance);
@@ -1389,5 +1395,20 @@ public class BoundaryDisplay implements IRenderable {
         return uniqueTimes.length != len
                 || (!uniqueTimes[0].equals(currentDisplayedTimes[0]) && !uniqueTimes[len - 1]
                         .equals(currentDisplayedTimes[len - 1]));
+    }
+
+    public void invalidAction() {
+        MessageDialog
+                .openWarning(
+                        Display.getCurrent().getActiveShell(),
+                        "Invalid Action for setting the motion",
+                        "Please follow the proper steps in setting the boundary in motion "
+                                + " The boundary is being reset to stationary \n"
+                                + " Now retry to set it in motion following these two simple steps: \n"
+                                + " 1) Select 'Moving' from 'Boundary Mode's dropdown menu \n"
+                                + " 2) move to another frame "
+                                + "before dragging the line to the desired position");
+
+        return;
     }
 }
