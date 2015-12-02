@@ -271,7 +271,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
                         MessageDialog.openWarning(Display.getCurrent()
                                 .getActiveShell(),
                                 "Previous Boundary Type Not Set",
-                                "Please set the boundary type" + " for ids: " + s
+                                "Please set the boundary type for ids: " + s
                                         + " before inserting another boundary");
                         return;
                     }
@@ -745,10 +745,12 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
                 if (boundarylayer.getBoundaryState().isMovingMap
                         .get(boundarylayer.getBoundaryState().boundaryId) == false) {
 
-                    if (boundarylayer.getBoundaryState().editedLineForMotionComputation == null)
+                    if (boundarylayer.getBoundaryState().editedLineForMotionComputation == null) {
                         boundarylayer.getBoundaryState().editedLineForMotionComputation = boundarylayer
                                 .getBoundaryState().boundariesMap
                                 .get(boundarylayer.getBoundaryState().boundaryId);
+
+                    }
 
                     boundarylayer.getBoundaryState().dragMePointMap
                             .put(boundarylayer.getBoundaryState().boundaryId,
@@ -790,31 +792,64 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
         switch (buttonID) {
         case SWT.YES:
 
-            if (boundaryModeMap.get(motionCbo.getText()) == Moving) {
-                boundarylayer.getBoundaryState().isMovingMap
-                        .remove(boundarylayer.getBoundaryState().boundaryId);
-                boundarylayer.getBoundaryState().isMovingMap.put(
-                        boundarylayer.getBoundaryState().boundaryId, false);
-
-                boundarylayer.getBoundaryState().vertexAngleMap
-                        .remove(boundarylayer.getBoundaryState().boundaryId);
-                boundarylayer.getBoundaryState().vertexSpeedMap
-                        .remove(boundarylayer.getBoundaryState().boundaryId);
-                boundarylayer.getBoundaryState().timePointsMap
-                        .remove(boundarylayer.getBoundaryState().boundaryId);
-                motionCbo.setItems(modeStrings);
-                motionCbo.setText(Stationary);
-                boundarylayer.getBoundaryState().lineIsMoving = false;
-                boundarylayer.getBoundaryState().dragingLineNotAllowed = false;
-                boundarylayer.getBoundaryState().movingEdited = false;
-            }
+            resetToStationary();
             break;
         default:
             boundarylayer.getBoundaryState().userAction = UserAction.NONE;
             break;
         }
         adjustMotionBtn.setEnabled(false);
+        cancelBtn.setEnabled(true);
+        saveDataBtn.setEnabled(true);
+        /*
+         * Highlight "Save Boundary Data" button is red: data not yet saved
+         * after a new boundary is inserted or an existing boundary is modified.
+         */
+        saveDataBtn.setBackground(Display.getCurrent().getSystemColor(
+                SWT.COLOR_RED));
         boundarylayer.issueRefresh();
+    }
+
+    public void outOfrangeError() {
+        resetToStationary();
+        adjustMotionBtn.setEnabled(false);
+        cancelBtn.setEnabled(true);
+        saveDataBtn.setEnabled(true);
+        /*
+         * Highlight "Save Boundary Data" button is red: data not yet saved
+         * after a new boundary is inserted or an existing boundary is modified.
+         */
+        saveDataBtn.setBackground(Display.getCurrent().getSystemColor(
+                SWT.COLOR_RED));
+        boundarylayer.issueRefresh();
+    }
+
+    public void resetToStationary() {
+
+        if (boundaryModeMap.get(motionCbo.getText()) == Moving) {
+            boundarylayer.getBoundaryState().isMovingMap.remove(boundarylayer
+                    .getBoundaryState().boundaryId);
+            boundarylayer.getBoundaryState().isMovingMap.put(
+                    boundarylayer.getBoundaryState().boundaryId, false);
+
+            boundarylayer.getBoundaryState().vertexAngleMap
+                    .remove(boundarylayer.getBoundaryState().boundaryId);
+            boundarylayer.getBoundaryState().vertexSpeedMap
+                    .remove(boundarylayer.getBoundaryState().boundaryId);
+            boundarylayer.getBoundaryState().timePointsMap.remove(boundarylayer
+                    .getBoundaryState().boundaryId);
+            motionCbo.setItems(modeStrings);
+            motionCbo.setText(Stationary);
+            boundarylayer.getBoundaryState().lineIsMoving = false;
+            boundarylayer.getBoundaryState().dragingLineNotAllowed = false;
+            boundarylayer.getBoundaryState().movingEdited = false;
+            boundarylayer.getBoundaryState().editedLineForMotionComputation = boundarylayer
+                    .getBoundaryState().boundariesMap.get(boundarylayer
+                    .getBoundaryState().boundaryId);
+            boundarylayer.getBoundaryState().motionIsResetToStationary = true;
+
+        }
+
     }
 
     public void regimeAction() {
@@ -887,7 +922,8 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
                         .setText(boundarylayer.getBoundaryState().boundaryTypeMap
                                 .get(id));
             } else {
-                regimeCbo.setText("---");
+                // this will prevent a null exception
+                regimeCbo.setText("Boundary type not yet defined");
             }
             if (boundarylayer.getBoundaryState().isMovingMap.get(id) == true) {
                 s = Moving;

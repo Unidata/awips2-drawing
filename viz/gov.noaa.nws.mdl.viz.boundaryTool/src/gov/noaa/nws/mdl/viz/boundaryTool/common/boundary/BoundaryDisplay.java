@@ -82,6 +82,8 @@ public class BoundaryDisplay implements IRenderable {
 
     private final String dragTextFormat = "Drag %s to %s";
 
+    private static final double MAX_DIST = 20000000;
+
     private final DateFormat timeFormat = new SimpleDateFormat("HH:mm");
 
     private IMapDescriptor descriptor;
@@ -238,7 +240,25 @@ public class BoundaryDisplay implements IRenderable {
         }
 
         case EDIT_BOUNDARY: {
-
+            if (currentState.motionIsResetToStationary) {
+                currentState.frameAtCreationTime = trackUtil
+                        .getCurrentFrame(paintProps.getFramesInfo());
+                currentState.createTimeMap.remove(currentState.boundaryId);
+                currentState.editedTimeMap.remove(currentState.boundaryId);
+                currentState.timePoints = null;
+                currentState.createTimeMap.put(currentState.boundaryId,
+                        dataTimes[currentTimeIndex]);
+                currentState.editedTimeMap.put(currentState.boundaryId,
+                        dataTimes[currentTimeIndex]);
+                theAnchorLineMap.remove(currentState.boundaryId);
+                currentState.existingBoundaryNotEmptyMap
+                        .remove(currentState.boundaryId);
+                currentState.existingBoundaryNotEmptyMap.put(
+                        currentState.boundaryId, false);
+                currentState.editedLineForMotionComputation = null;
+                currentState.timePointsMap.remove(currentState.boundaryId);
+                currentState.motionIsResetToStationary = false;
+            }
             currentState.dragMeLine = currentState.boundariesMap
                     .get(currentState.boundaryId);
             if (!currentState.boundariesMap.isEmpty()) {
@@ -335,8 +355,16 @@ public class BoundaryDisplay implements IRenderable {
         }
 
         case TRACK: {
+            if (currentState.loopingWasOn) {
+                currentState.loopingWasOn = false;
+                break;
+            }
             DataTime frameTime = paintProps.getDataTime();
             generateTrackInfo(currentState, paintProps, frameTime);
+            if (currentState.motionIsResetToStationary) {
+                currentState.userAction = UserAction.EDIT_BOUNDARY;
+                break;
+            }
             paintDragMeLine(target, paintProps);
             if (trackUtil.getDataTimes(paintProps.getFramesInfo()).length == 1) {
                 paintDragMeText(target, paintProps, currentState.dragMeLine);
@@ -491,28 +519,38 @@ public class BoundaryDisplay implements IRenderable {
             } else {
 
                 String frontType = state.boundaryTypeMap.get(boundaryId);
-                switch (frontType) {
-                case "COLD FRONT":
-                    lineColor = COLD_FRONT;
-                    textColor = COLD_FRONT;
-                    break;
-                case "STATIONARY/WARM FRONT":
-                    lineColor = WARM_FRONT;
-                    textColor = WARM_FRONT;
-                    break;
-                case "DRY LINE":
-                    lineColor = DRY_LINE;
-                    textColor = DRY_LINE;
-                    break;
-                case "SEA/LAKE BREEZE":
-                    lineColor = SEA_BREEZE;
-                    textColor = SEA_BREEZE;
-                    break;
-                case "GUST FRONT":
-                    lineColor = GUST_FRONTS;
-                    textColor = GUST_FRONTS;
-                    break;
+                /*
+                 * check if frontType is null; this will prevent null exception
+                 * when the user load the tool while the looping was on and they
+                 * insert new boundary.
+                 */
 
+                if (frontType == null) {
+                    lineColor = state.color;
+                } else {
+                    switch (frontType) {
+                    case "COLD FRONT":
+                        lineColor = COLD_FRONT;
+                        textColor = COLD_FRONT;
+                        break;
+                    case "STATIONARY/WARM FRONT":
+                        lineColor = WARM_FRONT;
+                        textColor = WARM_FRONT;
+                        break;
+                    case "DRY LINE":
+                        lineColor = DRY_LINE;
+                        textColor = DRY_LINE;
+                        break;
+                    case "SEA/LAKE BREEZE":
+                        lineColor = SEA_BREEZE;
+                        textColor = SEA_BREEZE;
+                        break;
+                    case "GUST FRONT":
+                        lineColor = GUST_FRONTS;
+                        textColor = GUST_FRONTS;
+                        break;
+
+                    }
                 }
 
                 paintLine(target, boundary.getCoordinates(), lineColor,
@@ -801,6 +839,7 @@ public class BoundaryDisplay implements IRenderable {
                         || update
                         || currentState.existingBoundaryNotEmptyMap
                                 .get(currentState.boundaryId)) {
+
                     /*
                      * if "update = true" then we need to remove the current
                      * boundary from timePointMap and theAnchorLineMap
@@ -812,6 +851,7 @@ public class BoundaryDisplay implements IRenderable {
                          * because timePoints get erased before we get to
                          * updateAnchorPoint
                          */
+
                         for (int j = 0; j < currentState.timePoints.length; j++) {
                             if (frameTime
                                     .equals(currentState.timePoints[j].time)) {
@@ -867,6 +907,7 @@ public class BoundaryDisplay implements IRenderable {
                                 .remove(currentState.boundaryId);
                         currentState.timePointsMap.put(currentState.boundaryId,
                                 currentState.timePoints);
+
                     } else if (currentState.existingBoundaryNotEmptyMap
                             .get(currentState.boundaryId)
                             && currentState.timePoints == null) {
@@ -907,6 +948,9 @@ public class BoundaryDisplay implements IRenderable {
                                 currentState.dragMePointMap
                                         .get(currentState.boundaryId));
                         generateExistingTrackInfo(currentState, paintProps);
+                        if (currentState.motionIsResetToStationary) {
+                            return;
+                        }
                         currentState.lineMovedMap
                                 .remove(currentState.boundaryId);
                         currentState.lineMovedMap.put(currentState.boundaryId,
@@ -1085,6 +1129,24 @@ public class BoundaryDisplay implements IRenderable {
 
                 DataTime coordTime = state.timePoints[i].time;
 
+                /*
+                 * Preventing a paint error. When a distance is out of range the
+                 * user will get an alert indicating that she must follow the
+                 * correct steps for creating a moving boundary. This alert
+                 * prevents the paint error to occur
+                 */
+                for (int j = 0; j < lineStartCoords.length; j++) {
+                    if (state.vertexSpeed[j]
+                            * trackUtil.timeBetweenDataTimes(startCoord.time,
+                                    coordTime) > MAX_DIST) {
+                        invalidAction();
+                        state.editedLineForMotionComputation = state.boundariesMap
+                                .get(state.boundaryId);
+
+                        state.dialogObject.outOfrangeError();
+                        return;
+                    }
+                }
                 GeodeticCalculator gc = new GeodeticCalculator();
                 for (int j = 0; j < lineStartCoords.length; j++) {
 
@@ -1096,6 +1158,14 @@ public class BoundaryDisplay implements IRenderable {
                     double distance = state.vertexSpeed[j]
                             * trackUtil.timeBetweenDataTimes(startCoord.time,
                                     coordTime);
+                    if (distance > MAX_DIST) {
+                        invalidAction();
+                        state.editedLineForMotionComputation = state.boundariesMap
+                                .get(state.boundaryId);
+
+                        state.dialogObject.outOfrangeError();
+                        return;
+                    }
                     if (i > startCoordIndex) {
                         gc.setDirection(state.vertexAngle[j], distance);
                     } else if (i < startCoordIndex) {
@@ -1217,6 +1287,14 @@ public class BoundaryDisplay implements IRenderable {
                     double distance = state.vertexSpeed[j]
                             * trackUtil.timeBetweenDataTimes(anchor.time,
                                     coordTime);
+                    if (distance > MAX_DIST) {
+                        invalidAction();
+                        state.editedLineForMotionComputation = state.boundariesMap
+                                .get(state.boundaryId);
+
+                        state.dialogObject.outOfrangeError();
+                        return;
+                    }
 
                     if (i > anchorIndex) {
                         gc.setDirection(state.vertexAngle[j], distance);
@@ -1317,5 +1395,20 @@ public class BoundaryDisplay implements IRenderable {
         return uniqueTimes.length != len
                 || (!uniqueTimes[0].equals(currentDisplayedTimes[0]) && !uniqueTimes[len - 1]
                         .equals(currentDisplayedTimes[len - 1]));
+    }
+
+    public void invalidAction() {
+        MessageDialog
+                .openWarning(
+                        Display.getCurrent().getActiveShell(),
+                        "Invalid Action for setting the motion",
+                        "Please follow the proper steps in setting the boundary in motion "
+                                + " The boundary is being reset to stationary \n"
+                                + " Now retry to set it in motion following these two simple steps: \n"
+                                + " 1) Select 'Moving' from 'Boundary Mode's dropdown menu \n"
+                                + " 2) move to another frame "
+                                + "before dragging the line to the desired position");
+
+        return;
     }
 }
