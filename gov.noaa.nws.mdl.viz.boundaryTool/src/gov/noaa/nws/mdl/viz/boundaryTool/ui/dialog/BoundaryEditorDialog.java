@@ -82,7 +82,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
 
     private LinkedHashMap<String, String> boundaryModeMap;
 
-    private BoundaryEditorLayer boundarylayer;
+    private final BoundaryEditorLayer boundarylayer;
 
     private Button insertBoundaryBtn, adjustMotionBtn, deleteBtn, saveDataBtn,
             cancelBtn;
@@ -229,6 +229,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
      * org.eclipse.jface.dialogs.Dialog#createDialogArea(org.eclipse.swt.widgets
      * .Composite)
      */
+    @Override
     public Control createDialogArea(Composite parent) {
         top = (Composite) super.createDialogArea(parent);
         GridLayout gridLayout = new GridLayout(1, false);
@@ -251,6 +252,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
         insertBoundaryBtn.setLayoutData(data);
 
         insertBoundaryBtn.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent arg0) {
                 // Check if regime is set for each inserted boundary
                 if (boundarylayer.getBoundaryState().boundariesMap.size() != 0) {
@@ -292,6 +294,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
         data = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         deleteBtn.setLayoutData(data);
         deleteBtn.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent arg0) {
 
                 deleteAction();
@@ -310,6 +313,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
 
         editCbo.addSelectionListener(new SelectionAdapter() {
 
+            @Override
             public void widgetSelected(SelectionEvent e) {
 
                 editAction();
@@ -328,6 +332,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
 
         boundaryLifeSpanCbo.addSelectionListener(new SelectionAdapter() {
 
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 lifeSpanAction();
             }
@@ -343,6 +348,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
         regimeCbo.setLayoutData(data);
 
         regimeCbo.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 regimeAction();
             }
@@ -362,6 +368,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
 
         motionCbo.addSelectionListener(new SelectionAdapter() {
 
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 modeAction();
             }
@@ -380,6 +387,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
         data = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         adjustMotionBtn.setLayoutData(data);
         adjustMotionBtn.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent arg0) {
                 adjustMotionAction();
             }
@@ -392,6 +400,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
         data = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         cancelBtn.setLayoutData(data);
         cancelBtn.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent arg0) {
                 cancelAction();
             }
@@ -403,6 +412,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
         data = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         saveDataBtn.setLayoutData(data);
         saveDataBtn.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent arg0) {
                 saveDataAction();
             }
@@ -453,6 +463,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
      * @see org.eclipse.jface.window.Window#configureShell(
      * editCbo.setItems(idStrings);org.eclipse.swt.widgets .Shell)
      */
+    @Override
     protected void configureShell(Shell shell) {
         super.configureShell(shell);
         shell.setText("Boundary Editor");
@@ -856,6 +867,7 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
         if (regimeCbo.getSelectionIndex() != -1
                 && boundarylayer.getBoundaryState().boundariesMap
                         .get(boundarylayer.getBoundaryState().boundaryId) != null) {
+
             boundarylayer.getBoundaryState().boundaryTypeMap.put(
                     boundarylayer.getBoundaryState().boundaryId,
                     regimeMap.get(regimeCbo.getText()));
@@ -1065,6 +1077,10 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
         saveDataBtn.setEnabled(false);
         saveDataBtn.setBackground(Display.getCurrent().getSystemColor(
                 SWT.COLOR_GRAY));
+    }
+
+    public void enableMotionSelection(boolean enabled) {
+        motionCbo.setEnabled(enabled);
     }
 
     public void setBtnTrueAfterCancelAction() {

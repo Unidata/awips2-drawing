@@ -88,7 +88,7 @@ public class BoundaryDisplay implements IRenderable {
 
     private IMapDescriptor descriptor;
 
-    private BoundaryUIManager manager;
+    private final BoundaryUIManager manager;
 
     private int lastFrame = -1;
 
@@ -104,7 +104,7 @@ public class BoundaryDisplay implements IRenderable {
 
     private int theAnchorIndex = -1;
 
-    private BoundaryUtil trackUtil;
+    private final BoundaryUtil trackUtil;
 
     boolean timeUpdated = false;
 
@@ -348,6 +348,7 @@ public class BoundaryDisplay implements IRenderable {
 
         case DRAG_ME: {
 
+            currentState.dialogObject.enableMotionSelection(false);
             paintDragMeLine(target, paintProps);
             paintDragMeText(target, paintProps, currentState.dragMeLine);
             currentState.dragingLineNotAllowed = false;
@@ -355,6 +356,7 @@ public class BoundaryDisplay implements IRenderable {
         }
 
         case TRACK: {
+            currentState.dialogObject.enableMotionSelection(true);
             if (currentState.loopingWasOn) {
                 currentState.loopingWasOn = false;
                 break;
