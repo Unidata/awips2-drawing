@@ -54,7 +54,6 @@ public class ReadBoundariesXmlFile {
         float bndLifeSpan = 0;
         long oneHour = TimeUtil.MILLIS_PER_HOUR;
         String moving = "Moving";
-        // Boundaries boundariesObj = new Boundaries();
 
         // Use Localization context to read boundary data
         IPathManager pm = PathManagerFactory.getPathManager();
@@ -63,129 +62,136 @@ public class ReadBoundariesXmlFile {
         LocalizationFile boundaryFile = pm.getLocalizationFile(context,
                 "awipsTools" + IPathManager.SEPARATOR + "boundaryTool.xml");
 
-        try {
-            // Read boundary data via localization
-            Boundaries boundariesObj = boundaryFile.jaxbUnmarshal(
-                    Boundaries.class, new JAXBManager(Boundaries.class));
+        if (boundaryFile.exists()) {
+            try {
+                // Read boundary data via localization
+                Boundaries boundariesObj = boundaryFile.jaxbUnmarshal(
+                        Boundaries.class, new JAXBManager(Boundaries.class));
 
-            d = new Date(boundariesObj.getTimeInfo().getFileCreationUtime());
+                d = new Date(boundariesObj.getTimeInfo().getFileCreationUtime());
 
-            currentState.creationFileTime = new DataTime(d);
+                currentState.creationFileTime = new DataTime(d);
 
-            for (int i = 0; i < boundariesObj.getBoundary().size(); i++) {
-                int boundaryId = boundariesObj.getBoundary().get(i)
-                        .getBoundaryId();
-                // Populate boundary active list for those active boundaries.
+                for (int i = 0; i < boundariesObj.getBoundary().size(); i++) {
+                    int boundaryId = boundariesObj.getBoundary().get(i)
+                            .getBoundaryId();
+                    // Populate boundary active list for those active
+                    // boundaries.
 
-                d = new Date(boundariesObj.getBoundary().get(i)
-                        .getBoundaryCreationUtime());
+                    d = new Date(boundariesObj.getBoundary().get(i)
+                            .getBoundaryCreationUtime());
 
-                DataTime t = new DataTime(SimulatedTime.getSystemTime()
-                        .getTime());
-                currTime = t.getMatchRef();
-                createTime = boundariesObj.getBoundary().get(i)
-                        .getBoundaryCreationUtime();
-                bndLifeSpan = (currTime - createTime) / oneHour;
+                    DataTime t = new DataTime(SimulatedTime.getSystemTime()
+                            .getTime());
+                    currTime = t.getMatchRef();
+                    createTime = boundariesObj.getBoundary().get(i)
+                            .getBoundaryCreationUtime();
+                    bndLifeSpan = (currTime - createTime) / oneHour;
 
-                if (bndLifeSpan >= (float) boundariesObj.getBoundary().get(i)
-                        .getBoundaryLifeSpan()) {
-                    // Add expired boundaries to forbidden list
-                    if (currentState.forbiddenBoundaryIdsMap.get(boundaryId) != null) {
-                        currentState.forbiddenBoundaryIdsMap.remove(boundaryId);
-                        currentState.forbiddenBoundaryIdsMap.put(boundaryId,
-                                boundaryId);
-                    }
-                    continue;
-                }
-
-                currentState.createTimeMap.put(boundaryId, new DataTime(d));
-                currentState.boundaryDurationMap.put(boundaryId, boundariesObj
-                        .getBoundary().get(i).getBoundaryLifeSpan());
-
-                d = new Date(boundariesObj.getBoundary().get(i)
-                        .getBoundaryEditedUtime());
-                currentState.editedTimeMap.put(boundaryId, new DataTime(d));
-
-                d = new Date(boundariesObj.getBoundary().get(i)
-                        .getBoundaryExpirationUtime());
-                currentState.expirationTimeMap.put(boundaryId, new DataTime(d));
-
-                Coordinate[] coords = new Coordinate[boundariesObj
-                        .getBoundary().get(i).getNumberOfVertices()];
-                float[] speed = new float[boundariesObj.getBoundary().get(i)
-                        .getNumberOfVertices()];
-                float[] angle = new float[boundariesObj.getBoundary().get(i)
-                        .getNumberOfVertices()];
-
-                for (int j = 0; j < boundariesObj.getBoundary().get(i)
-                        .getVertex().size(); j++) {
-                    coords[j] = new Coordinate(boundariesObj.getBoundary()
-                            .get(i).getVertex().get(j).getLongitude(),
-                            boundariesObj.getBoundary().get(i).getVertex()
-                                    .get(j).getLatitude());
-                    speed[j] = boundariesObj.getBoundary().get(i).getVertex()
-                            .get(j).getSpeed();
-                    angle[j] = boundariesObj.getBoundary().get(i).getVertex()
-                            .get(j).getAzimuth();
-
-                }
-
-                currentState.boundariesMap.put(boundaryId,
-                        new GeometryFactory().createLineString(coords));
-
-                if (boundariesObj.getBoundary().get(i).getBoundaryMode()
-                        .equals(moving)) {
-                    currentState.isMovingMap.put(boundaryId, true);
-                    currentState.vertexAngleMap.put(boundaryId, angle);
-                    currentState.vertexSpeedMap.put(boundaryId, speed);
-                } else {
-                    currentState.isMovingMap.put(boundaryId, false);
-                }
-                currentState.boundaryTypeMap.put(boundaryId, boundariesObj
-                        .getBoundary().get(i).getBoundaryType());
-                currentState.boundaryId = boundaryId;
-                if (currentState.boundariesMap.size() != 0) {
-                    if (currentState.existingBoundaryNotEmptyMap
-                            .get(boundaryId) != null) {
-                        currentState.existingBoundaryNotEmptyMap
-                                .remove(boundaryId);
+                    if (bndLifeSpan >= (float) boundariesObj.getBoundary()
+                            .get(i).getBoundaryLifeSpan()) {
+                        // Add expired boundaries to forbidden list
+                        if (currentState.forbiddenBoundaryIdsMap
+                                .get(boundaryId) != null) {
+                            currentState.forbiddenBoundaryIdsMap
+                                    .remove(boundaryId);
+                            currentState.forbiddenBoundaryIdsMap.put(
+                                    boundaryId, boundaryId);
+                        }
+                        continue;
                     }
 
-                    currentState.existingBoundaryNotEmptyMap.put(boundaryId,
-                            true);
+                    currentState.createTimeMap.put(boundaryId, new DataTime(d));
+                    currentState.boundaryDurationMap.put(boundaryId,
+                            boundariesObj.getBoundary().get(i)
+                                    .getBoundaryLifeSpan());
+
+                    d = new Date(boundariesObj.getBoundary().get(i)
+                            .getBoundaryEditedUtime());
+                    currentState.editedTimeMap.put(boundaryId, new DataTime(d));
+
+                    d = new Date(boundariesObj.getBoundary().get(i)
+                            .getBoundaryExpirationUtime());
+                    currentState.expirationTimeMap.put(boundaryId,
+                            new DataTime(d));
+
+                    Coordinate[] coords = new Coordinate[boundariesObj
+                            .getBoundary().get(i).getNumberOfVertices()];
+                    float[] speed = new float[boundariesObj.getBoundary()
+                            .get(i).getNumberOfVertices()];
+                    float[] angle = new float[boundariesObj.getBoundary()
+                            .get(i).getNumberOfVertices()];
+
+                    for (int j = 0; j < boundariesObj.getBoundary().get(i)
+                            .getVertex().size(); j++) {
+                        coords[j] = new Coordinate(boundariesObj.getBoundary()
+                                .get(i).getVertex().get(j).getLongitude(),
+                                boundariesObj.getBoundary().get(i).getVertex()
+                                        .get(j).getLatitude());
+                        speed[j] = boundariesObj.getBoundary().get(i)
+                                .getVertex().get(j).getSpeed();
+                        angle[j] = boundariesObj.getBoundary().get(i)
+                                .getVertex().get(j).getAzimuth();
+
+                    }
+
+                    currentState.boundariesMap.put(boundaryId,
+                            new GeometryFactory().createLineString(coords));
+
+                    if (boundariesObj.getBoundary().get(i).getBoundaryMode()
+                            .equals(moving)) {
+                        currentState.isMovingMap.put(boundaryId, true);
+                        currentState.vertexAngleMap.put(boundaryId, angle);
+                        currentState.vertexSpeedMap.put(boundaryId, speed);
+                    } else {
+                        currentState.isMovingMap.put(boundaryId, false);
+                    }
+                    currentState.boundaryTypeMap.put(boundaryId, boundariesObj
+                            .getBoundary().get(i).getBoundaryType());
+                    currentState.boundaryId = boundaryId;
+                    if (currentState.boundariesMap.size() != 0) {
+                        if (currentState.existingBoundaryNotEmptyMap
+                                .get(boundaryId) != null) {
+                            currentState.existingBoundaryNotEmptyMap
+                                    .remove(boundaryId);
+                        }
+
+                        currentState.existingBoundaryNotEmptyMap.put(
+                                boundaryId, true);
+                    }
                 }
+
+                // Populate boundary forbidden id list
+
+                List<ForbiddenBoundaryIds> forbiden = boundariesObj
+                        .getForbiddenBoundaryIds();
+
+                Iterator<ForbiddenBoundaryIds> iterator = forbiden.iterator();
+
+                int id = 0;
+                Iterable<String> s1 = null;
+
+                while (iterator.hasNext()) {
+                    s1 = iterator.next().getForbiddenId();
+                    for (String e : s1) {
+                        try {
+                            id = Integer.parseInt(e);
+
+                        } catch (NumberFormatException ex) {
+                            statusHandler.handle(Priority.PROBLEM,
+                                    "Problem in parsing the integer", ex);
+                        }
+                        currentState.forbiddenBoundaryIdsMap.put(id, id);
+                    }
+                }
+
+            } catch (JAXBException e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "problem in reading boundary data", e);
+            } catch (LocalizationException e1) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Localization exception", e1);
             }
-
-            // Populate boundary forbidden id list
-
-            List<ForbiddenBoundaryIds> forbiden = boundariesObj
-                    .getForbiddenBoundaryIds();
-
-            Iterator<ForbiddenBoundaryIds> iterator = forbiden.iterator();
-
-            int id = 0;
-            Iterable<String> s1 = null;
-
-            while (iterator.hasNext()) {
-                s1 = iterator.next().getForbiddenId();
-                for (String e : s1) {
-                    try {
-                        id = Integer.parseInt(e);
-
-                    } catch (NumberFormatException ex) {
-                        statusHandler.handle(Priority.PROBLEM,
-                                "Problem in parsing the integer", ex);
-                    }
-                    currentState.forbiddenBoundaryIdsMap.put(id, id);
-                }
-            }
-
-        } catch (JAXBException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "problem in reading boundary data", e);
-        } catch (LocalizationException e1) {
-            statusHandler.handle(Priority.PROBLEM, "Localization eception", e1);
         }
-
     }
 }
