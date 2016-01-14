@@ -58,7 +58,7 @@ public class ReadBoundariesXmlFile {
         // Use Localization context to read boundary data
         IPathManager pm = PathManagerFactory.getPathManager();
         LocalizationContext context = pm.getContext(
-                LocalizationType.CAVE_STATIC, LocalizationLevel.USER);
+                LocalizationType.CAVE_STATIC, LocalizationLevel.SITE);
         LocalizationFile boundaryFile = pm.getLocalizationFile(context,
                 "awipsTools" + IPathManager.SEPARATOR + "boundaryTool.xml");
 
