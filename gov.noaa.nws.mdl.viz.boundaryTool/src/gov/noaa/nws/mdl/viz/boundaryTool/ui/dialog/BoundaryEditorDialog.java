@@ -106,7 +106,10 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
 
     // Atmospheric regimes
     private final String regime[] = { "COLD FRONT", "STATIONARY/WARM FRONT",
-            "SEA/LAKE BREEZE", "DRY LINE", "GUST FRONT" };
+            "SEA/LAKE BREEZE", "DRY LINE", "GUST FRONT",
+            "SELECT TO DEFINE TYPE" };
+
+    private final int userRegimeIndex = 5;
 
     private void setupEditMenu(UserAction type) {
 
@@ -867,7 +870,41 @@ public class BoundaryEditorDialog extends CaveJFACEDialog {
         if (regimeCbo.getSelectionIndex() != -1
                 && boundarylayer.getBoundaryState().boundariesMap
                         .get(boundarylayer.getBoundaryState().boundaryId) != null) {
+            // User define boundary Type
+            if (regimeCbo.getText().equals(regime[userRegimeIndex])) {
+                UserInputBndType dlg = new UserInputBndType(Display
+                        .getCurrent().getActiveShell());
+                dlg.open();
+                String input = dlg.userInput;
 
+                if (UserInputBndType.isOK) {
+                    if (!input.isEmpty()) {
+                        for (String i : regimeMap.keySet()) {
+                            if (regimeMap.get(i)
+                                    .equals(regime[userRegimeIndex])) {
+                                regimeMap.remove(i);
+                                regimeMap.put(input, input);
+                            }
+                        }
+                        regimeCbo.setText(input);
+                        if (regimeMap.get(regimeCbo.getText()) == null) {
+                            regimeMap.put(input, input);
+                        }
+
+                    } else {
+                        MessageDialog.openWarning(Display.getCurrent()
+                                .getActiveShell(), "Input is empty",
+                                "Please define a boundary type \n"
+                                        + " 'SELECT TO DEFINE TYPE' again "
+                                        + "from Boundary Type dropmenu");
+                        regimeCbo.setText("Select Boundary Type");
+                        return;
+                    }
+                } else {
+                    return;
+                }
+
+            }
             boundarylayer.getBoundaryState().boundaryTypeMap.put(
                     boundarylayer.getBoundaryState().boundaryId,
                     regimeMap.get(regimeCbo.getText()));
