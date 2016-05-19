@@ -8,6 +8,7 @@ import gov.noaa.nws.mdl.viz.boundaryTool.boundaries.state.xml.Boundaries.Forbidd
 import gov.noaa.nws.mdl.viz.boundaryTool.common.boundary.BoundaryState;
 import gov.noaa.nws.mdl.viz.boundaryTool.common.boundary.BoundaryState.BoundaryPolyLine;
 
+import java.io.IOException;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
@@ -25,8 +26,10 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.SaveableOutputStream;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.JAXBManager;
+import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -246,19 +249,12 @@ public class WriteBoundariesXmlFile {
         } catch (JAXBException e1) {
             statusHandler.handle(Priority.PROBLEM, "Initialization fails", e1);
         }
-        try {
-
-            // Save boundary data via Localization
-
-            boundaryFile.jaxbMarshal(boundariesObj, jaxbManager);
-
-            boundaryFile.save();
-
-        } catch (LocalizationException e) {
-            statusHandler.handle(Priority.PROBLEM, "Localization exception "
-                    + boundaryFile, e);
+        try (SaveableOutputStream sos = boundaryFile.openOutputStream()) {
+            jaxbManager.marshalToStream(boundariesObj, sos);
+            sos.save();
+        } catch (IOException | LocalizationException | SerializationException e) {
+            statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         }
-
     }
 
     /**
