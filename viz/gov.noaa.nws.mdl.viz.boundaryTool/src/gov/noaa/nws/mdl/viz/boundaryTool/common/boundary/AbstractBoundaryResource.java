@@ -1,10 +1,5 @@
 package gov.noaa.nws.mdl.viz.boundaryTool.common.boundary;
 
-import gov.noaa.nws.mdl.viz.boundaryTool.common.boundary.BoundaryState.Mode;
-import gov.noaa.nws.mdl.viz.boundaryTool.common.boundary.BoundaryState.UserAction;
-
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 
 import org.eclipse.jface.action.IMenuManager;
@@ -31,19 +26,33 @@ import com.raytheon.uf.viz.core.rsc.tools.GenericToolsResourceData;
 import com.raytheon.viz.ui.cmenu.IContextMenuContributor;
 import com.raytheon.viz.ui.input.EditableManager;
 
+import gov.noaa.nws.mdl.viz.boundaryTool.common.boundary.BoundaryState.Mode;
+import gov.noaa.nws.mdl.viz.boundaryTool.common.boundary.BoundaryState.UserAction;
+
 /**
  * Abstract class for drawing boundary object
- * 
+ *
+ * <pre>
+ *
+ * SOFTWARE HISTORY
+ *
+ * Date         Ticket# Engineer    Description
+ * ------------ ------- ----------- --------------------------
+ *                      mba         Initial creation
+ * Apr 25, 2018 5863    mapeters    AbstractVizResource.dataTimes changed to a
+ *                                  NavigableSet
+ *
+ * </pre>
+ *
  * @author Mamoudou ba
- * @version 1.0
- * 
- *          Modified from A2 "AbstractStormTrackResource" class by renaming the
- *          class name and methods
+ *
+ *         Modified from A2 "AbstractStormTrackResource" class by renaming the
+ *         class name and methods
  */
 
-public abstract class AbstractBoundaryResource extends
-        AbstractVizResource<AbstractResourceData, MapDescriptor> implements
-        IResourceDataChanged, IContextMenuContributor {
+public abstract class AbstractBoundaryResource
+        extends AbstractVizResource<AbstractResourceData, MapDescriptor>
+        implements IResourceDataChanged, IContextMenuContributor {
 
     private BoundaryDisplay display;
 
@@ -64,10 +73,9 @@ public abstract class AbstractBoundaryResource extends
     public AbstractBoundaryResource(
             GenericToolsResourceData<? extends AbstractBoundaryResource> resourceData,
             LoadProperties loadProperties, MapDescriptor descriptor) {
-        super(resourceData, loadProperties);
+        super(resourceData, loadProperties, false);
         setDescriptor(descriptor);
         resourceData.addChangeListener(this);
-        dataTimes = new ArrayList<DataTime>();
 
         displayState = new BoundaryState();
         trackUtil = new BoundaryUtil();
@@ -99,7 +107,7 @@ public abstract class AbstractBoundaryResource extends
 
                 this.maximumFrameCount = this.descriptor.getNumberOfFrames();
 
-                DataTime earliestTime = this.dataTimes.get(0);
+                DataTime earliestTime = this.dataTimes.first();
                 this.fillDataTimeArray(earliestTime, variance);
             }
         } else {
@@ -113,29 +121,23 @@ public abstract class AbstractBoundaryResource extends
                 }
             }
 
-            if (dataTimes.size() == 0) {
+            if (dataTimes.isEmpty()) {
                 timeMatchBasis = true;
                 /*
                  * Case where this tool is time match basis or no data loaded
                  */
-                DataTime currentTime = null;
-                if (dataTimes.size() > 0) {
-                    currentTime = dataTimes.get(dataTimes.size() - 1);
-                } else {
-                    currentTime = new DataTime(SimulatedTime.getSystemTime()
-                            .getTime());
-                }
-
+                DataTime currentTime = new DataTime(
+                        SimulatedTime.getSystemTime().getTime());
                 dataTimes.add(currentTime);
                 this.fillDataTimeArray(currentTime,
                         this.descriptor.getNumberOfFrames() - 1);
             }
         }
-        Collections.sort(dataTimes);
-        return dataTimes.toArray(new DataTime[dataTimes.size()]);
+        return dataTimes.toArray(new DataTime[0]);
     }
 
-    private void fillDataTimeArray(DataTime startDataTime, int numberOfDataTimes) {
+    private void fillDataTimeArray(DataTime startDataTime,
+            int numberOfDataTimes) {
         long fifteenMin = 15 * TimeUtil.MILLIS_PER_MINUTE;
         long time = startDataTime.getRefTime().getTime();
         DataTime currentDataTime = null;
@@ -194,7 +196,7 @@ public abstract class AbstractBoundaryResource extends
 
         display.paint(target, newProps);
 
-         manager.setHandleInput(displayState.isEditable());
+        manager.setHandleInput(displayState.isEditable());
     }
 
     @Override
