@@ -28,4 +28,8 @@
           </command>
         </menuContribution>
    </extension>
+   <extension
+         point="com.raytheon.uf.viz.kml.export.disable">
+         <kmlDisable class="gov.noaa.nws.mdl.viz.boundaryTool.ui.layer.BoundaryEditorLayer"/>
+   </extension>
 </plugin>
