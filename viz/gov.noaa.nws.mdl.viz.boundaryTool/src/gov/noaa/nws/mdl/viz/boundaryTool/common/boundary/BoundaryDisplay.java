@@ -771,7 +771,7 @@ public class BoundaryDisplay implements IRenderable {
                 radiusFromPoint, angle);
         DrawableString str = new DrawableString(text, color);
         str.horizontalAlignment = hAlignment;
-        str.verticallAlignment = vAlignment;
+        str.verticalAlignment = vAlignment;
         // set the string magnification
         str.magnification = magnification;
         str.setCoordinates(labelLoc[0], labelLoc[1]);
