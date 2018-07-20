@@ -73,7 +73,7 @@ public abstract class AbstractBoundaryResource
     public AbstractBoundaryResource(
             GenericToolsResourceData<? extends AbstractBoundaryResource> resourceData,
             LoadProperties loadProperties, MapDescriptor descriptor) {
-        super(resourceData, loadProperties, false);
+        super(resourceData, loadProperties);
         setDescriptor(descriptor);
         resourceData.addChangeListener(this);
 
@@ -107,7 +107,7 @@ public abstract class AbstractBoundaryResource
 
                 this.maximumFrameCount = this.descriptor.getNumberOfFrames();
 
-                DataTime earliestTime = this.dataTimes.first();
+                DataTime earliestTime = this.dataTimes.get(0);
                 this.fillDataTimeArray(earliestTime, variance);
             }
         } else {
