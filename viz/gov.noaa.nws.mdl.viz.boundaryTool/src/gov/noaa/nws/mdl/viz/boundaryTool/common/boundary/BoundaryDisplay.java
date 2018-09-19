@@ -1,8 +1,5 @@
 package gov.noaa.nws.mdl.viz.boundaryTool.common.boundary;
 
-import gov.noaa.nws.mdl.viz.boundaryTool.common.boundary.BoundaryState.BoundaryPolyLine;
-import gov.noaa.nws.mdl.viz.boundaryTool.common.boundary.BoundaryState.UserAction;
-
 import java.awt.geom.Point2D;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -38,18 +35,18 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 
+import gov.noaa.nws.mdl.viz.boundaryTool.common.boundary.BoundaryState.BoundaryPolyLine;
+import gov.noaa.nws.mdl.viz.boundaryTool.common.boundary.BoundaryState.UserAction;
+
 /**
  * Working version of BoundaryDisplay, correctly draws and keeps track of
  * coordinates, speed, and angle.
  * 
- * <pre>
- * 
  * @author Mamoudou Ba
  * @version 1.0
  * 
- * </pre>
- * 
- * April 2011: Substantially modified from A2 "StormTrackDisplay" class
+ *          April 2011: Substantially modified from A2 "StormTrackDisplay" class
+ *          Sep 2018: Check for null dialogObject.
  */
 
 public class BoundaryDisplay implements IRenderable {
@@ -97,10 +94,10 @@ public class BoundaryDisplay implements IRenderable {
     private DataTime[] currentDisplayedTimes;
 
     /** HashMap to store active boundaries */
-    public Map<Integer, LineString> theAnchorLineMap = new HashMap<Integer, LineString>();
+    public Map<Integer, LineString> theAnchorLineMap = new HashMap<>();
 
     /** HashMap to store active boundaries */
-    public Map<Integer, Integer> theAnchorIndexMap = new HashMap<Integer, Integer>();
+    public Map<Integer, Integer> theAnchorIndexMap = new HashMap<>();
 
     private int theAnchorIndex = -1;
 
@@ -108,7 +105,8 @@ public class BoundaryDisplay implements IRenderable {
 
     boolean timeUpdated = false;
 
-    public BoundaryDisplay(IMapDescriptor descriptor, BoundaryUIManager manager) {
+    public BoundaryDisplay(IMapDescriptor descriptor,
+            BoundaryUIManager manager) {
         this.descriptor = descriptor;
         this.timeFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
         this.manager = manager;
@@ -134,11 +132,11 @@ public class BoundaryDisplay implements IRenderable {
         if (times.length == 0) {
             return;
         }
-        int currentTimeIndex = this.trackUtil.getCurrentFrame(paintProps
-                .getFramesInfo());
+        int currentTimeIndex = this.trackUtil
+                .getCurrentFrame(paintProps.getFramesInfo());
         currentState.timeIndex = currentTimeIndex;
-        DataTime[] dataTimes = trackUtil.getDataTimes(paintProps
-                .getFramesInfo());
+        DataTime[] dataTimes = trackUtil
+                .getDataTimes(paintProps.getFramesInfo());
         currentState.currentDataTimes = dataTimes;
         int currentFrame = trackUtil
                 .getCurrentFrame(paintProps.getFramesInfo());
@@ -147,8 +145,9 @@ public class BoundaryDisplay implements IRenderable {
                 .get(currentState.boundaryId);
         // If the state's time points are set and the times don't quite match up
         if (currentState.timePoints != null
-                && (currentState.timePoints.length != times.length || !times[currentFrame]
-                        .equals(currentState.timePoints[currentFrame].time,
+                && (currentState.timePoints.length != times.length
+                        || !times[currentFrame].equals(
+                                currentState.timePoints[currentFrame].time,
                                 true))) {
             int oldPivot = currentState.pivotIndex;
             trackUtil.setPivotIndexes(paintProps.getFramesInfo(), currentState);
@@ -204,8 +203,8 @@ public class BoundaryDisplay implements IRenderable {
 
             if (currentState.timePoints != null) {
 
-                Coordinate[] anchorCoords = currentState.dragMePointMap.get(
-                        currentState.boundaryId).getCoordinates();
+                Coordinate[] anchorCoords = currentState.dragMePointMap
+                        .get(currentState.boundaryId).getCoordinates();
                 currentState.dragMePoint = new Point[anchorCoords.length];
                 for (int k = 0; k < anchorCoords.length; k++) {
                     currentState.dragMePoint[k] = gf
@@ -253,8 +252,8 @@ public class BoundaryDisplay implements IRenderable {
                 theAnchorLineMap.remove(currentState.boundaryId);
                 currentState.existingBoundaryNotEmptyMap
                         .remove(currentState.boundaryId);
-                currentState.existingBoundaryNotEmptyMap.put(
-                        currentState.boundaryId, false);
+                currentState.existingBoundaryNotEmptyMap
+                        .put(currentState.boundaryId, false);
                 currentState.editedLineForMotionComputation = null;
                 currentState.timePointsMap.remove(currentState.boundaryId);
                 currentState.motionIsResetToStationary = false;
@@ -313,7 +312,9 @@ public class BoundaryDisplay implements IRenderable {
         case CANCEL_MODIFICATION: {
             if (!currentState.boundariesMap.isEmpty()) {
                 paintPolyMode(target, paintProps);
-                currentState.dialogObject.setBtnFalseAfterCancelAction();
+                if (currentState.dialogObject != null) {
+                    currentState.dialogObject.setBtnFalseAfterCancelAction();
+                }
                 currentState.editedLineForMotionComputation = null;
                 currentState.dragingLineNotAllowed = true;
             }
@@ -323,7 +324,9 @@ public class BoundaryDisplay implements IRenderable {
         case NONE: {
             if (!currentState.boundariesMap.isEmpty()) {
                 paintPolyMode(target, paintProps);
-                currentState.dialogObject.setBtnFalseAfterCancelAction();
+                if (currentState.dialogObject != null) {
+                    currentState.dialogObject.setBtnFalseAfterCancelAction();
+                }
                 currentState.editedLineForMotionComputation = null;
                 currentState.dragingLineNotAllowed = true;
             }
@@ -347,8 +350,9 @@ public class BoundaryDisplay implements IRenderable {
         switch (currentState.mode) {
 
         case DRAG_ME: {
-
-            currentState.dialogObject.enableMotionSelection(false);
+            if (currentState.dialogObject != null) {
+                currentState.dialogObject.enableMotionSelection(false);
+            }
             paintDragMeLine(target, paintProps);
             paintDragMeText(target, paintProps, currentState.dragMeLine);
             currentState.dragingLineNotAllowed = false;
@@ -356,7 +360,9 @@ public class BoundaryDisplay implements IRenderable {
         }
 
         case TRACK: {
-            currentState.dialogObject.enableMotionSelection(true);
+            if (currentState.dialogObject != null) {
+                currentState.dialogObject.enableMotionSelection(true);
+            }
             if (currentState.loopingWasOn) {
                 currentState.loopingWasOn = false;
                 break;
@@ -368,7 +374,8 @@ public class BoundaryDisplay implements IRenderable {
                 break;
             }
             paintDragMeLine(target, paintProps);
-            if (trackUtil.getDataTimes(paintProps.getFramesInfo()).length == 1) {
+            if (trackUtil
+                    .getDataTimes(paintProps.getFramesInfo()).length == 1) {
                 paintDragMeText(target, paintProps, currentState.dragMeLine);
             }
 
@@ -396,7 +403,8 @@ public class BoundaryDisplay implements IRenderable {
                     lengthChanged = true;
                 }
 
-                if (lengthChanged || vertexMoved) {
+                if (currentState.dialogObject != null
+                        && (lengthChanged || vertexMoved)) {
                     currentState.dialogObject.setBtnTrueAfterCancelAction();
                 }
             }
@@ -422,9 +430,9 @@ public class BoundaryDisplay implements IRenderable {
     private void paintDragMeLine(IGraphicsTarget target,
             BoundaryProperties paintProps) throws VizException {
         BoundaryState state = paintProps.getState();
-        final double circleSize = state.isEditable() ? editableCircleSize
-                * paintProps.getZoomLevel() : unEditableCircleSize
-                * paintProps.getZoomLevel();
+        final double circleSize = state.isEditable()
+                ? editableCircleSize * paintProps.getZoomLevel()
+                : unEditableCircleSize * paintProps.getZoomLevel();
 
         // get the magnification from the state
         float magnification = state.magnification;
@@ -433,8 +441,8 @@ public class BoundaryDisplay implements IRenderable {
         if (line == null) {
             GeodeticCalculator gc = new GeodeticCalculator(descriptor.getCRS());
             int numPoints = state.numDragMePoints;
-            double[] worldPixel = descriptor.pixelToWorld(paintProps.getView()
-                    .getExtent().getCenter());
+            double[] worldPixel = descriptor
+                    .pixelToWorld(paintProps.getView().getExtent().getCenter());
             double lengthInMeters = state.distanceThreshold
                     * state.lineOfStormsLength;
             gc.setStartingGeographicPoint(worldPixel[0], worldPixel[1]);
@@ -442,13 +450,15 @@ public class BoundaryDisplay implements IRenderable {
             double firstAngle = startAngle - 90;
             double secondAngle = startAngle + 90;
             gc.setDirection(trackUtil.adjustAngle(firstAngle), lengthInMeters);
-            Coordinate c1 = new Coordinate(gc.getDestinationGeographicPoint()
-                    .getX(), gc.getDestinationGeographicPoint().getY());
+            Coordinate c1 = new Coordinate(
+                    gc.getDestinationGeographicPoint().getX(),
+                    gc.getDestinationGeographicPoint().getY());
 
             gc.setStartingGeographicPoint(worldPixel[0], worldPixel[1]);
             gc.setDirection(trackUtil.adjustAngle(secondAngle), lengthInMeters);
-            Coordinate c3 = new Coordinate(gc.getDestinationGeographicPoint()
-                    .getX(), gc.getDestinationGeographicPoint().getY());
+            Coordinate c3 = new Coordinate(
+                    gc.getDestinationGeographicPoint().getX(),
+                    gc.getDestinationGeographicPoint().getY());
 
             Coordinate[] coords = null;
             // unless explicitly set to 2, assume 3 points
@@ -463,8 +473,8 @@ public class BoundaryDisplay implements IRenderable {
             if (state.dragMePoint != null) {
                 if (state.dragMePointMap.get(state.boundaryId) == null)
                     state.dragMePointMap.put(state.boundaryId, line);
-                Coordinate[] dragLineCoords = state.dragMePointMap.get(
-                        state.boundaryId).getCoordinates();
+                Coordinate[] dragLineCoords = state.dragMePointMap
+                        .get(state.boundaryId).getCoordinates();
                 state.dragMePoint = new Point[dragLineCoords.length];
                 for (int k = 0; k < dragLineCoords.length; k++) {
                     state.dragMePoint[k] = gf.createPoint(dragLineCoords[k]);
@@ -491,8 +501,8 @@ public class BoundaryDisplay implements IRenderable {
 
         // KS - Need to loop over all lines rather than just paint one
 
-        int moveIndex = this.trackUtil.getCurrentFrame(paintProps
-                .getFramesInfo());
+        int moveIndex = this.trackUtil
+                .getCurrentFrame(paintProps.getFramesInfo());
         BoundaryPolyLine[] currentTimePoints;
         LineString boundary;
         Iterator<Integer> iterator = state.boundariesMap.keySet().iterator();
@@ -573,9 +583,9 @@ public class BoundaryDisplay implements IRenderable {
         }
 
         if (state.mouseDownGeom != null) {
-            paintLine(target, state.mouseDownGeom.getCoordinates(),
-                    state.color, state.lineWidth, state.isEditable(),
-                    circleSize, LineStyle.DOTTED);
+            paintLine(target, state.mouseDownGeom.getCoordinates(), state.color,
+                    state.lineWidth, state.isEditable(), circleSize,
+                    LineStyle.DOTTED);
             lineColor = LIGHT_GRAY;
         }
     }
@@ -613,14 +623,14 @@ public class BoundaryDisplay implements IRenderable {
                 if (editable) {
                     paintPoint(target, currCoord, color, circleSize);
                 } else {
-                    p1 = descriptor.worldToPixel(new double[] { currCoord.x,
-                            currCoord.y });
+                    p1 = descriptor.worldToPixel(
+                            new double[] { currCoord.x, currCoord.y });
                     circle.setCoordinates(p1[0], p1[1]);
                     target.drawCircle(circle);
                 }
 
-                p1 = descriptor.worldToPixel(new double[] { currCoord.x,
-                        currCoord.y });
+                p1 = descriptor.worldToPixel(
+                        new double[] { currCoord.x, currCoord.y });
                 line.addPoint(p1[0], p1[1]);
             }
         }
@@ -635,8 +645,8 @@ public class BoundaryDisplay implements IRenderable {
      * @param circleSize
      * @throws VizException
      */
-    private void paintPoint(IGraphicsTarget target, Coordinate point,
-            RGB color, double circleSize) throws VizException {
+    private void paintPoint(IGraphicsTarget target, Coordinate point, RGB color,
+            double circleSize) throws VizException {
         if (point == null) {
             return;
         }
@@ -693,8 +703,8 @@ public class BoundaryDisplay implements IRenderable {
             Coordinate last = coords[coords.length - 1];
             Coordinate secondLast = coords[coords.length - 2];
 
-            toUse = new Coordinate(last.x - (last.x - secondLast.x) / 2, last.y
-                    - (last.y - secondLast.y) / 2);
+            toUse = new Coordinate(last.x - (last.x - secondLast.x) / 2,
+                    last.y - (last.y - secondLast.y) / 2);
             toUseId = new Coordinate(last.x, last.y);
         }
         paintTextAtPoint(target, text, toUse, geomColor, circleSize * 3, ang,
@@ -786,7 +796,8 @@ public class BoundaryDisplay implements IRenderable {
      * @param currentState
      */
     private void generateTrackInfo(BoundaryState currentState,
-            PaintProperties paintProps, DataTime frameTime) throws VizException {
+            PaintProperties paintProps, DataTime frameTime)
+            throws VizException {
         int frameCount = trackUtil.getFrameCount(paintProps.getFramesInfo());
         int currFrame = trackUtil.getCurrentFrame(paintProps.getFramesInfo());
         DataTime[] times = trackUtil.getDataTimes(paintProps.getFramesInfo());
@@ -806,7 +817,7 @@ public class BoundaryDisplay implements IRenderable {
          * being modified, cannot use "iterator" using "iterator" statement
          * while the list is modified causes "ConcurrentModificationException"
          */
-        Map<Integer, Integer> activeBoundariesMap = new HashMap<Integer, Integer>();
+        Map<Integer, Integer> activeBoundariesMap = new HashMap<>();
 
         for (int i : currentState.boundariesMap.keySet()) {
             if (currentState.isMovingMap.get(i)) {
@@ -835,10 +846,10 @@ public class BoundaryDisplay implements IRenderable {
                 currentState.timePoints = currentState.timePointsMap
                         .get(currentState.boundaryId);
 
-                if (currentState.timePointsMap.get(currentState.boundaryId) == null
+                if (currentState.timePointsMap
+                        .get(currentState.boundaryId) == null
                         || currentState.timePoints.length != frameCount
-                        || currentState.newDuration != -1
-                        || update
+                        || currentState.newDuration != -1 || update
                         || currentState.existingBoundaryNotEmptyMap
                                 .get(currentState.boundaryId)) {
 
@@ -877,7 +888,8 @@ public class BoundaryDisplay implements IRenderable {
                         currentState.newDuration = -1;
                     }
 
-                    if (this.theAnchorLineMap.get(currentState.boundaryId) == null
+                    if (this.theAnchorLineMap
+                            .get(currentState.boundaryId) == null
                             && currentState.existingBoundaryNotEmptyMap
                                     .get(currentState.boundaryId) == false) {
                         this.theAnchorLineMap.remove(currentState.boundaryId);
@@ -888,8 +900,8 @@ public class BoundaryDisplay implements IRenderable {
                         currentState.dragMePointMap
                                 .remove(currentState.boundaryId);
 
-                        currentState.dragMePointMap.put(
-                                currentState.boundaryId, this.theAnchorLineMap
+                        currentState.dragMePointMap.put(currentState.boundaryId,
+                                this.theAnchorLineMap
                                         .get(currentState.boundaryId));
                         currentState.timePoints = null;
                         currentState.timePointsMap
@@ -926,21 +938,23 @@ public class BoundaryDisplay implements IRenderable {
                     }
 
                     generateNewTrackInfo(currentState, currFrame, paintProps);
-                    currentDisplayedTimes = trackUtil.getDataTimes(paintProps
-                            .getFramesInfo());
+                    currentDisplayedTimes = trackUtil
+                            .getDataTimes(paintProps.getFramesInfo());
 
                     currentState.displayedIndexAtStartMotionCompute = this.trackUtil
                             .getCurrentFrame(paintProps.getFramesInfo());
 
                     generateTrackInfo(currentState, paintProps, frameTime);
                 } else {
-                    if (currentState.lineMovedMap.get(currentState.boundaryId)) {
+                    if (currentState.lineMovedMap
+                            .get(currentState.boundaryId)) {
                         if (currentState.userAction == UserAction.EDIT_BOUNDARY) {
                             currentState.editedTimeMap
                                     .remove(currentState.boundaryId);
                             currentState.editedTimeMap.put(
                                     currentState.boundaryId, times[currFrame]);
-                            if (currentState.geomChanged == true) {
+                            if (currentState.geomChanged == true
+                                    && currentState.dialogObject != null) {
                                 currentState.dialogObject
                                         .setBtnTrueAfterCancelAction();
                             }
@@ -960,16 +974,15 @@ public class BoundaryDisplay implements IRenderable {
                         moved = true;
                     }
 
-                    currentDisplayedTimes = trackUtil.getDataTimes(paintProps
-                            .getFramesInfo());
+                    currentDisplayedTimes = trackUtil
+                            .getDataTimes(paintProps.getFramesInfo());
                     if (moved) {
                         this.theAnchorIndex = currFrame;
                         currentState.timePoints = currentState.timePointsMap
                                 .get(currentState.boundaryId);
                         this.theAnchorLineMap.remove(currentState.boundaryId);
-                        this.theAnchorLineMap
-                                .put(currentState.boundaryId,
-                                        currentState.timePoints[theAnchorIndex].polyline);
+                        this.theAnchorLineMap.put(currentState.boundaryId,
+                                currentState.timePoints[theAnchorIndex].polyline);
                     }
                 }
 
@@ -992,7 +1005,8 @@ public class BoundaryDisplay implements IRenderable {
                 currentState.dragMePointMap.put(currentState.boundaryId,
                         dragPointLine);
 
-                if (currentState.boundariesMap.get(currentState.boundaryId) != null) {
+                if (currentState.boundariesMap
+                        .get(currentState.boundaryId) != null) {
 
                     currentState.dragMeLine = manager.figureLineFromPoint(
                             currentState.boundariesMap
@@ -1008,8 +1022,8 @@ public class BoundaryDisplay implements IRenderable {
 
                 currentState.dragMePointMap.put(currentState.boundaryId,
                         this.theAnchorLineMap.get(currentState.boundaryId));
-                Coordinate[] dragLineCoords = this.theAnchorLineMap.get(
-                        currentState.boundaryId).getCoordinates();
+                Coordinate[] dragLineCoords = this.theAnchorLineMap
+                        .get(currentState.boundaryId).getCoordinates();
                 currentState.dragMePoint = new Point[dragLineCoords.length];
                 for (int k = 0; k < dragLineCoords.length; k++) {
                     currentState.dragMePoint[k] = gf
@@ -1022,8 +1036,8 @@ public class BoundaryDisplay implements IRenderable {
 
     private void generateExistingTrackInfo(BoundaryState state,
             PaintProperties paintProps) {
-        int moveIndex = this.trackUtil.getCurrentFrame(paintProps
-                .getFramesInfo());
+        int moveIndex = this.trackUtil
+                .getCurrentFrame(paintProps.getFramesInfo());
         moveIndex = Math.min(moveIndex, state.timePoints.length - 1);
         int pivotIndex = state.displayedPivotIndex;
         pivotIndex = Math.min(pivotIndex, state.timePoints.length - 1);
@@ -1097,8 +1111,8 @@ public class BoundaryDisplay implements IRenderable {
                             gc.setStartingGeographicPoint(
                                     lineStartCoordsForMotion[j].x,
                                     lineStartCoordsForMotion[j].y);
-                            gc.setDestinationGeographicPoint(
-                                    lineEndCoords[j].x, lineEndCoords[j].y);
+                            gc.setDestinationGeographicPoint(lineEndCoords[j].x,
+                                    lineEndCoords[j].y);
                         } else {
                             gc.setStartingGeographicPoint(lineEndCoords[j].x,
                                     lineEndCoords[j].y);
@@ -1109,9 +1123,8 @@ public class BoundaryDisplay implements IRenderable {
                         }
                         angle = gc.getAzimuth();
                         oppositeAngle = trackUtil.adjustAngle(angle + 180);
-                        speed = gc.getOrthodromicDistance()
-                                / trackUtil.timeBetweenDataTimes(
-                                        startCoordForMotion.time,
+                        speed = gc.getOrthodromicDistance() / trackUtil
+                                .timeBetweenDataTimes(startCoordForMotion.time,
                                         endCoordForMotion.time);
                         state.vertexAngle[j] = (float) angle;
                         state.vertexSpeed[j] = (float) speed;
@@ -1138,14 +1151,14 @@ public class BoundaryDisplay implements IRenderable {
                  * prevents the paint error to occur
                  */
                 for (int j = 0; j < lineStartCoords.length; j++) {
-                    if (state.vertexSpeed[j]
-                            * trackUtil.timeBetweenDataTimes(startCoord.time,
-                                    coordTime) > MAX_DIST) {
+                    if (state.vertexSpeed[j] * trackUtil.timeBetweenDataTimes(
+                            startCoord.time, coordTime) > MAX_DIST) {
                         invalidAction();
                         state.editedLineForMotionComputation = state.boundariesMap
                                 .get(state.boundaryId);
-
-                        state.dialogObject.outOfrangeError();
+                        if (state.dialogObject != null) {
+                            state.dialogObject.outOfrangeError();
+                        }
                         return;
                     }
                 }
@@ -1157,15 +1170,15 @@ public class BoundaryDisplay implements IRenderable {
                     gc.setStartingGeographicPoint(lineStartCoords[j].x,
                             lineStartCoords[j].y);
 
-                    double distance = state.vertexSpeed[j]
-                            * trackUtil.timeBetweenDataTimes(startCoord.time,
-                                    coordTime);
+                    double distance = state.vertexSpeed[j] * trackUtil
+                            .timeBetweenDataTimes(startCoord.time, coordTime);
                     if (distance > MAX_DIST) {
                         invalidAction();
                         state.editedLineForMotionComputation = state.boundariesMap
                                 .get(state.boundaryId);
-
-                        state.dialogObject.outOfrangeError();
+                        if (state.dialogObject != null) {
+                            state.dialogObject.outOfrangeError();
+                        }
                         return;
                     }
                     if (i > startCoordIndex) {
@@ -1207,7 +1220,7 @@ public class BoundaryDisplay implements IRenderable {
     }
 
     private void generateNewTrackInfo(BoundaryState state, int anchorIndex,
-            PaintProperties paintProps) throws ImpossibleTrackException {
+            PaintProperties paintProps) {
         double oppositeAngle;
         int frameCount = trackUtil.getFrameCount(paintProps.getFramesInfo());
         state.timePoints = state.timePointsMap.get(state.boundaryId);
@@ -1227,8 +1240,8 @@ public class BoundaryDisplay implements IRenderable {
         } else {
             theAnchorIndex = anchorIndex;
         }
-        DataTime[] dataTimes = trackUtil.getDataTimes(paintProps
-                .getFramesInfo());
+        DataTime[] dataTimes = trackUtil
+                .getDataTimes(paintProps.getFramesInfo());
         BoundaryPolyLine[] timePoints = new BoundaryPolyLine[frameCount];
         BoundaryPolyLine anchor = new BoundaryPolyLine(
                 this.theAnchorLineMap.get(state.boundaryId),
@@ -1265,9 +1278,10 @@ public class BoundaryDisplay implements IRenderable {
 
                 for (int j = 0; j < lineCoords.length; j++) {
 
-                    Coordinate[] coords = state.boundariesMap.get(
-                            state.boundaryId).getCoordinates();
-                    if (state.vertexSpeed == null || state.vertexAngle == null) {
+                    Coordinate[] coords = state.boundariesMap
+                            .get(state.boundaryId).getCoordinates();
+                    if (state.vertexSpeed == null
+                            || state.vertexAngle == null) {
                         state.vertexSpeed[j] = vertexSpeed[j];
 
                         // calculate based on polyline
@@ -1276,8 +1290,8 @@ public class BoundaryDisplay implements IRenderable {
                         gc.setDestinationGeographicPoint(
                                 coords[coords.length - 1].x,
                                 coords[coords.length - 1].y);
-                        state.vertexAngle[j] = (float) trackUtil.adjustAngle(gc
-                                .getAzimuth() - 90);
+                        state.vertexAngle[j] = (float) trackUtil
+                                .adjustAngle(gc.getAzimuth() - 90);
                     }
                     oppositeAngle = trackUtil
                             .adjustAngle(state.vertexAngle[j] + 180);
@@ -1286,15 +1300,15 @@ public class BoundaryDisplay implements IRenderable {
                     gc.setStartingGeographicPoint(lineCoords[j].x,
                             lineCoords[j].y);
 
-                    double distance = state.vertexSpeed[j]
-                            * trackUtil.timeBetweenDataTimes(anchor.time,
-                                    coordTime);
+                    double distance = state.vertexSpeed[j] * trackUtil
+                            .timeBetweenDataTimes(anchor.time, coordTime);
                     if (distance > MAX_DIST) {
                         invalidAction();
                         state.editedLineForMotionComputation = state.boundariesMap
                                 .get(state.boundaryId);
-
-                        state.dialogObject.outOfrangeError();
+                        if (state.dialogObject != null) {
+                            state.dialogObject.outOfrangeError();
+                        }
                         return;
                     }
 
@@ -1353,13 +1367,13 @@ public class BoundaryDisplay implements IRenderable {
             if (currentState.existingBoundaryNotEmptyMap != null)
                 currentState.existingBoundaryNotEmptyMap
                         .remove(currentState.boundaryId);
-            currentState.existingBoundaryNotEmptyMap.put(
-                    currentState.boundaryId, false);
+            currentState.existingBoundaryNotEmptyMap
+                    .put(currentState.boundaryId, false);
         } else {
             sc = currentState.timePoints[currFrame];
         }
-        DataTime[] dataTimes = trackUtil.getDataTimes(paintProps
-                .getFramesInfo());
+        DataTime[] dataTimes = trackUtil
+                .getDataTimes(paintProps.getFramesInfo());
         double distance;
 
         Coordinate[] coords = sc.polyline.getCoordinates();
@@ -1371,9 +1385,8 @@ public class BoundaryDisplay implements IRenderable {
         for (int j = 0; j < coords.length; j++) {
             GeodeticCalculator gc = new GeodeticCalculator();
             gc.setStartingGeographicPoint(coords[j].x, coords[j].y);
-            distance = vertexSpeed[j]
-                    * trackUtil.timeBetweenDataTimes(sc.time,
-                            dataTimes[currFrame]);
+            distance = vertexSpeed[j] * trackUtil.timeBetweenDataTimes(sc.time,
+                    dataTimes[currFrame]);
             gc.setDirection(vertexAngle[j], distance);
             Point2D point = gc.getDestinationGeographicPoint();
             vertices[j] = new Coordinate(point.getX(), point.getY());
@@ -1388,28 +1401,27 @@ public class BoundaryDisplay implements IRenderable {
     }
 
     public boolean isUpdatedDataTimes(PaintProperties paintProps) {
-        DataTime[] uniqueTimes = trackUtil.getDataTimes(paintProps
-                .getFramesInfo());
+        DataTime[] uniqueTimes = trackUtil
+                .getDataTimes(paintProps.getFramesInfo());
         if (currentDisplayedTimes == null) {
             return false;
         }
         int len = currentDisplayedTimes.length;
         return uniqueTimes.length != len
-                || (!uniqueTimes[0].equals(currentDisplayedTimes[0]) && !uniqueTimes[len - 1]
-                        .equals(currentDisplayedTimes[len - 1]));
+                || (!uniqueTimes[0].equals(currentDisplayedTimes[0])
+                        && !uniqueTimes[len - 1]
+                                .equals(currentDisplayedTimes[len - 1]));
     }
 
     public void invalidAction() {
-        MessageDialog
-                .openWarning(
-                        Display.getCurrent().getActiveShell(),
-                        "Invalid Action for setting the motion",
-                        "Please follow the proper steps in setting the boundary in motion "
-                                + " The boundary is being reset to stationary \n"
-                                + " Now retry to set it in motion following these two simple steps: \n"
-                                + " 1) Select 'Moving' from 'Boundary Mode's dropdown menu \n"
-                                + " 2) move to another frame "
-                                + "before dragging the line to the desired position");
+        MessageDialog.openWarning(Display.getCurrent().getActiveShell(),
+                "Invalid Action for setting the motion",
+                "Please follow the proper steps in setting the boundary in motion "
+                        + " The boundary is being reset to stationary \n"
+                        + " Now retry to set it in motion following these two simple steps: \n"
+                        + " 1) Select 'Moving' from 'Boundary Mode's dropdown menu \n"
+                        + " 2) move to another frame "
+                        + "before dragging the line to the desired position");
 
         return;
     }
